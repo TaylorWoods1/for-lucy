@@ -1,0 +1,24 @@
+{
+  "name": "for-lucy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Private cycle companion PWA for Lucy",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
+    "audit": "npm audit --audit-level=moderate",
+    "verify": "npm run lint && npm run format && npm run test && npm audit"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.28.0",
+    "eslint": "^9.28.0",
+    "globals": "^16.2.0",
+    "prettier": "^3.5.3",
+    "vitest": "^3.2.4"
+  }
+}

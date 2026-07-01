@@ -1,31 +1,19 @@
-const CACHE = 'cycle-companion-v5';
-const ASSETS = [
-  './',
-  './index.html',
-  './styles.css',
-  './app.js',
-  './storage.js',
-  './cycle.js',
-  './config.js',
-  './tips.js',
-  './manifest.json',
-  './icons/icon.svg',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-];
+import { CONFIG, CACHE_ASSETS } from './js/config.js';
+
+const CACHE = CONFIG.serviceWorker.cacheName;
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(ASSETS))
-  );
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(CACHE_ASSETS)));
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-    )
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))),
+      ),
   );
   self.clients.claim();
 });
@@ -42,6 +30,6 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       })
-      .catch(() => caches.match(event.request))
+      .catch(() => caches.match(event.request)),
   );
 });
