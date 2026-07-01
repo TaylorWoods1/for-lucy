@@ -1,13 +1,14 @@
-# Cycle Companion
+# For Lucy · Cycle Companion
 
 A private, mobile-first PWA to track cycle phases and get supportive partner tips.
+
+**Live:** [taylorwoods1.github.io/for-lucy](https://taylorwoods1.github.io/for-lucy/)
 
 ## Quick start
 
 Serve the folder over HTTP (required for service worker and modules):
 
 ```bash
-cd cycle-companion
 python3 -m http.server 8080
 ```
 
