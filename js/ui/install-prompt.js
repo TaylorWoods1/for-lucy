@@ -2,8 +2,6 @@ import { CONFIG } from '../config.js';
 import { getInstallSteps, getPlatform, shouldShowInstallPrompt } from '../lib/platform.js';
 import { escapeHtml } from './dom.js';
 
-const STEP_INTERVAL_MS = 3200;
-
 /** @type {ReturnType<typeof setInterval> | null} */
 let stepTimer = null;
 
@@ -47,16 +45,25 @@ function stepIconMarkup(icon) {
 }
 
 /**
- * Render step indicators.
- * @param {number} count
+ * Render tappable step indicators.
+ * @param {ReturnType<typeof getInstallSteps>} steps
  * @param {number} activeIndex
  * @returns {string}
  */
-function dotsMarkup(count, activeIndex) {
-  return Array.from(
-    { length: count },
-    (_, i) => `<span class="install-dot${i === activeIndex ? ' install-dot--active' : ''}"></span>`,
-  ).join('');
+function dotsMarkup(steps, activeIndex) {
+  return steps
+    .map(
+      (step, index) => `
+      <button
+        type="button"
+        class="install-dot${index === activeIndex ? ' install-dot--active' : ''}"
+        data-step-index="${index}"
+        aria-label="Step ${index + 1}: ${escapeHtml(step.title)}"
+        aria-current="${index === activeIndex ? 'step' : 'false'}"
+      ></button>
+    `,
+    )
+    .join('');
 }
 
 /**
@@ -81,18 +88,42 @@ function stepsMarkup(steps) {
 }
 
 /**
- * Show a step by index with animation.
+ * Resolve slide direction when moving between steps (handles wrap-around).
+ * @param {number} from
+ * @param {number} to
+ * @param {number} count
+ * @returns {'forward' | 'back' | 'none'}
+ */
+function getDirection(from, to, count) {
+  if (from === to) return 'none';
+  const forward = (to - from + count) % count;
+  const back = (from - to + count) % count;
+  return forward <= back ? 'forward' : 'back';
+}
+
+/**
+ * Show a step by index with directional animation.
  * @param {HTMLElement} overlay
  * @param {number} index
+ * @param {'forward' | 'back' | 'none'} direction
  */
-function showStep(overlay, index) {
+function showStep(overlay, index, direction = 'none') {
+  const stepsContainer = overlay.querySelector('.install-steps');
   const steps = overlay.querySelectorAll('.install-step');
   const dots = overlay.querySelectorAll('.install-dot');
+
+  if (stepsContainer) {
+    stepsContainer.dataset.direction = direction;
+  }
+
   steps.forEach((step, i) => {
     step.classList.toggle('install-step--active', i === index);
   });
+
   dots.forEach((dot, i) => {
-    dot.classList.toggle('install-dot--active', i === index);
+    const isActive = i === index;
+    dot.classList.toggle('install-dot--active', isActive);
+    dot.setAttribute('aria-current', isActive ? 'step' : 'false');
   });
 }
 
@@ -116,6 +147,62 @@ function closeOverlay(overlay) {
 }
 
 /**
+ * Attach swipe handlers to the step carousel.
+ * @param {HTMLElement} target
+ * @param {(direction: 'forward' | 'back') => void} onSwipe
+ */
+function bindSwipeNavigation(target, onSwipe) {
+  const threshold = CONFIG.ui.installPrompt.swipeThresholdPx;
+  let startX = 0;
+  let startY = 0;
+  let tracking = false;
+
+  const onStart = (x, y) => {
+    startX = x;
+    startY = y;
+    tracking = true;
+  };
+
+  const onEnd = (x, y) => {
+    if (!tracking) return;
+    tracking = false;
+
+    const deltaX = x - startX;
+    const deltaY = y - startY;
+
+    if (Math.abs(deltaX) < threshold || Math.abs(deltaX) < Math.abs(deltaY)) return;
+
+    onSwipe(deltaX < 0 ? 'forward' : 'back');
+  };
+
+  target.addEventListener(
+    'touchstart',
+    (event) => {
+      const touch = event.changedTouches[0];
+      onStart(touch.clientX, touch.clientY);
+    },
+    { passive: true },
+  );
+
+  target.addEventListener(
+    'touchend',
+    (event) => {
+      const touch = event.changedTouches[0];
+      onEnd(touch.clientX, touch.clientY);
+    },
+    { passive: true },
+  );
+
+  target.addEventListener('mousedown', (event) => {
+    onStart(event.clientX, event.clientY);
+  });
+
+  target.addEventListener('mouseup', (event) => {
+    onEnd(event.clientX, event.clientY);
+  });
+}
+
+/**
  * Initialise the add-to-home-screen tutorial for browser users.
  */
 export function initInstallPrompt() {
@@ -124,6 +211,7 @@ export function initInstallPrompt() {
   const platform = getPlatform();
   const steps = getInstallSteps(platform);
   const { title } = CONFIG.app;
+  const stepCount = steps.length;
 
   const overlay = document.createElement('div');
   overlay.className = 'install-overlay';
@@ -145,8 +233,11 @@ export function initInstallPrompt() {
         </div>
         <div class="install-phone__tap"></div>
       </div>
-      <div class="install-steps">${stepsMarkup(steps)}</div>
-      <div class="install-dots">${dotsMarkup(steps.length, 0)}</div>
+      <div class="install-steps" tabindex="0" aria-roledescription="carousel" aria-label="Install steps">
+        ${stepsMarkup(steps)}
+      </div>
+      <p class="install-swipe-hint">Swipe or tap a dot to change step</p>
+      <div class="install-dots" role="tablist" aria-label="Choose install step">${dotsMarkup(steps, 0)}</div>
       <button type="button" class="btn btn-primary install-got-it">Got it</button>
     </div>
   `;
@@ -155,10 +246,48 @@ export function initInstallPrompt() {
   requestAnimationFrame(() => overlay.classList.add('install-overlay--visible'));
 
   let activeStep = 0;
-  stepTimer = setInterval(() => {
-    activeStep = (activeStep + 1) % steps.length;
-    showStep(overlay, activeStep);
-  }, STEP_INTERVAL_MS);
+
+  const resetAutoAdvance = () => {
+    if (stepTimer) clearInterval(stepTimer);
+    stepTimer = setInterval(() => {
+      goToStep(activeStep + 1, { auto: true });
+    }, CONFIG.ui.installPrompt.stepIntervalMs);
+  };
+
+  const goToStep = (index, { auto = false } = {}) => {
+    const nextIndex = ((index % stepCount) + stepCount) % stepCount;
+    const direction = getDirection(activeStep, nextIndex, stepCount);
+    activeStep = nextIndex;
+    showStep(overlay, activeStep, direction);
+    if (!auto) resetAutoAdvance();
+  };
+
+  resetAutoAdvance();
+
+  overlay.querySelectorAll('.install-dot').forEach((dot) => {
+    dot.addEventListener('click', () => {
+      const index = Number(dot.getAttribute('data-step-index'));
+      if (!Number.isNaN(index)) goToStep(index);
+    });
+  });
+
+  const stepsEl = overlay.querySelector('.install-steps');
+  if (stepsEl) {
+    bindSwipeNavigation(stepsEl, (direction) => {
+      goToStep(activeStep + (direction === 'forward' ? 1 : -1));
+    });
+
+    stepsEl.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        goToStep(activeStep + 1);
+      }
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        goToStep(activeStep - 1);
+      }
+    });
+  }
 
   const dismiss = () => {
     setDismissed();

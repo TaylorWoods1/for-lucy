@@ -591,7 +591,14 @@ header p {
 .install-steps {
   position: relative;
   min-height: 118px;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.35rem;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+}
+
+.install-steps:active {
+  cursor: grabbing;
 }
 
 .install-step {
@@ -599,11 +606,41 @@ header p {
   inset: 0;
   text-align: center;
   opacity: 0;
-  transform: translateX(12px);
+  transform: translateX(16px);
   transition:
-    opacity 0.4s ease,
-    transform 0.4s ease;
+    opacity 0.45s ease,
+    transform 0.45s ease;
   pointer-events: none;
+}
+
+.install-steps[data-direction='forward'] .install-step--active {
+  animation: install-step-in-forward 0.45s ease;
+}
+
+.install-steps[data-direction='back'] .install-step--active {
+  animation: install-step-in-back 0.45s ease;
+}
+
+@keyframes install-step-in-forward {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes install-step-in-back {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .install-step--active {
@@ -669,23 +706,40 @@ header p {
 .install-dots {
   display: flex;
   justify-content: center;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
+  gap: 0.55rem;
+  margin-bottom: 0.75rem;
+}
+
+.install-swipe-hint {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.65rem;
 }
 
 .install-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
+  width: 2rem;
+  height: 0.55rem;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
   background: #e8e4e1;
+  cursor: pointer;
   transition:
     background 0.3s ease,
-    transform 0.3s ease;
+    transform 0.3s ease,
+    width 0.3s ease;
 }
 
 .install-dot--active {
   background: var(--rose);
-  transform: scale(1.15);
+  width: 2.4rem;
+  transform: scale(1.02);
+}
+
+.install-dot:focus-visible {
+  outline: 2px solid var(--rose);
+  outline-offset: 2px;
 }
 
 .install-got-it {
