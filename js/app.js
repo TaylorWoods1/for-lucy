@@ -2,6 +2,7 @@ import Storage from './lib/storage.js';
 import { getCycleState } from './lib/cycle.js';
 import { renderOnboarding } from './ui/onboarding.js';
 import { renderDashboard } from './ui/dashboard.js';
+import { initInstallPrompt } from './ui/install-prompt.js';
 
 /** Re-render the current view from stored data. */
 function render() {
@@ -18,6 +19,7 @@ function render() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  initInstallPrompt();
   render();
 });
 
