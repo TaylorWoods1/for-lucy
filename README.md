@@ -4,38 +4,57 @@ A private, mobile-first PWA to track cycle phases and get supportive partner tip
 
 **Live:** [taylorwoods1.github.io/for-lucy](https://taylorwoods1.github.io/for-lucy/)
 
+## Features
+
+- Cycle phase dashboard with progress and partner tips
+- Predicted upcoming period dates (learns average cycle length over time)
+- GMT+10 calendar dates via `Australia/Brisbane`
+- Local-only storage — nothing leaves the device
+- Installable PWA with offline shell
+
 ## Quick start
 
-Serve the folder over HTTP (required for service worker and modules):
-
 ```bash
+npm ci
+npm run verify    # lint, format, test, audit
 python3 -m http.server 8080
 ```
 
-Open `http://localhost:8080` on your phone (same Wi‑Fi) or use [Add to Home Screen](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Making_PWAs_installable) for an app-like experience.
+Open `http://localhost:8080`. Use Chrome or Safari for the best PWA experience.
 
-## Usage
+## Project structure
 
-1. Log when her period started (onboarding or **Period started today**).
-2. Open anytime to see the current phase, days until next period, and support tips.
-3. The app learns her average cycle length after a few logged starts (defaults to 28 days).
+```text
+js/
+  config.js          # Central configuration (single source of truth)
+  app.js             # Bootstrap
+  lib/               # Pure domain logic (dates, cycle, storage)
+  content/           # Static content (tips)
+  ui/                # View components (onboarding, dashboard, toast)
+css/styles.css
+tests/               # Vitest unit tests
+sw.js                # Service worker (ES module)
+```
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for design details.
+
+## Scripts
+
+| Command          | Purpose                                          |
+| ---------------- | ------------------------------------------------ |
+| `npm test`       | Run unit tests                                   |
+| `npm run lint`   | ESLint                                           |
+| `npm run format` | Prettier check                                   |
+| `npm run verify` | Full quality gate (lint + format + test + audit) |
 
 ## Privacy
 
-All data stays in your browser's local storage. Nothing is sent to a server.
+All cycle data is stored in `localStorage` on the user's device. No analytics, accounts, or backend.
 
-## Files
+## Deployment
 
-| File | Purpose |
-|------|---------|
-| `index.html` | App shell |
-| `app.js` | UI and interactions |
-| `cycle.js` | Phase math and predictions |
-| `storage.js` | localStorage adapter (cloud-ready) |
-| `tips.js` | Phase-specific support copy |
-| `sw.js` | Offline service worker |
-| `manifest.json` | PWA install metadata |
+Pushes to `main` run CI, then deploy to the `gh-pages` branch via GitHub Actions. Dev tooling files are excluded from the published site.
 
-## Deploy
+## Contributing
 
-Live at [taylorwoods1.github.io/for-lucy](https://taylorwoods1.github.io/for-lucy/). Pushes to `main` deploy to the `gh-pages` branch via GitHub Actions. No build step needed.
+See [CONTRIBUTING.md](CONTRIBUTING.md).

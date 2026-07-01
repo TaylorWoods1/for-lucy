@@ -1,6 +1,6 @@
-import { CONFIG } from './config.js';
+import { CONFIG } from '../config.js';
 
-const { name } = CONFIG;
+const { name } = CONFIG.app;
 
 const TIPS = {
   period: [
@@ -65,10 +65,15 @@ const TIPS = {
   ],
 };
 
-function getTipsForPhase(phase) {
+/**
+ * Return a rotating set of partner tips for the current phase.
+ * @param {string} phase
+ * @returns {string[]}
+ */
+export function getTipsForPhase(phase) {
   const sets = TIPS[phase] || TIPS.luteal;
-  const index = Math.floor(Date.now() / 86400000) % sets.length;
+  const index = Math.floor(Date.now() / 86_400_000) % sets.length;
   return sets[index];
 }
 
-export { getTipsForPhase, TIPS };
+export { TIPS };

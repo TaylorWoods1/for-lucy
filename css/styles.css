@@ -20,6 +20,17 @@
   padding: 0;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
 html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
@@ -93,10 +104,22 @@ header p {
   margin-bottom: 0.75rem;
 }
 
-.phase-badge.follicular { background: var(--sage-light); color: var(--sage); }
-.phase-badge.ovulation { background: #fef3e2; color: #b8860b; }
-.phase-badge.luteal { background: #ede8f0; color: #7b6b8a; }
-.phase-badge.pms { background: var(--rose-light); color: var(--rose-dark); }
+.phase-badge.follicular {
+  background: var(--sage-light);
+  color: var(--sage);
+}
+.phase-badge.ovulation {
+  background: #fef3e2;
+  color: #b8860b;
+}
+.phase-badge.luteal {
+  background: #ede8f0;
+  color: #7b6b8a;
+}
+.phase-badge.pms {
+  background: var(--rose-light);
+  color: var(--rose-dark);
+}
 
 .cycle-day {
   font-size: 2.75rem;
@@ -280,7 +303,9 @@ header p {
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -370,7 +395,9 @@ header p {
   font-size: 0.875rem;
   font-weight: 500;
   opacity: 0;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
   z-index: 100;
   white-space: nowrap;
 }

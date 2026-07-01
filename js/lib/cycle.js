@@ -1,46 +1,52 @@
-import { CONFIG } from './config.js';
+import { CONFIG } from '../config.js';
+import { daysBetween, formatDateISO, formatDisplayDate, parseDateISO, todayISO } from './dates.js';
 
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
+/** @typedef {'period' | 'follicular' | 'ovulation' | 'luteal' | 'pms'} Phase */
 
-function parseDateISO(iso) {
-  const [y, m, d] = iso.split('-').map(Number);
-  return new Date(y, m - 1, d);
-}
+/** @type {Record<Phase, string>} */
+export const PHASE_LABELS = {
+  period: 'Period',
+  follicular: 'Follicular',
+  ovulation: 'Ovulation',
+  luteal: 'Luteal',
+  pms: 'PMS',
+};
 
-function formatDateISO(date = new Date()) {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: CONFIG.timezone,
-  }).format(date);
-}
-
-function todayISO() {
-  return formatDateISO(new Date());
-}
-
-function daysBetween(start, end) {
-  const startDate = typeof start === 'string' ? parseDateISO(start) : parseDateISO(formatDateISO(start));
-  const endDate = typeof end === 'string' ? parseDateISO(end) : parseDateISO(formatDateISO(end));
-  return Math.round((endDate - startDate) / MS_PER_DAY);
-}
-
-function averageCycleLength(cycles) {
+/**
+ * Compute average days between logged period starts.
+ * @param {Array<{ startDate: string }>} cycles
+ * @returns {number | null}
+ */
+export function averageCycleLength(cycles) {
   if (cycles.length < 2) return null;
   const sorted = [...cycles].sort((a, b) => a.startDate.localeCompare(b.startDate));
   const intervals = [];
-  for (let i = 1; i < sorted.length; i++) {
+  for (let i = 1; i < sorted.length; i += 1) {
     intervals.push(daysBetween(sorted[i - 1].startDate, sorted[i].startDate));
   }
   return Math.round(intervals.reduce((a, b) => a + b, 0) / intervals.length);
 }
 
-function averagePeriodLength(cycles) {
+/**
+ * Compute average period length when end dates are logged.
+ * @param {Array<{ startDate: string, endDate?: string }>} cycles
+ * @returns {number | null}
+ */
+export function averagePeriodLength(cycles) {
   const withEnd = cycles.filter((c) => c.endDate);
   if (!withEnd.length) return null;
   const lengths = withEnd.map((c) => daysBetween(c.startDate, c.endDate) + 1);
   return Math.round(lengths.reduce((a, b) => a + b, 0) / lengths.length);
 }
 
-function getPhase(cycleDay, cycleLength, periodLength) {
+/**
+ * Determine cycle phase from day number.
+ * @param {number} cycleDay
+ * @param {number} cycleLength
+ * @param {number} periodLength
+ * @returns {Phase}
+ */
+export function getPhase(cycleDay, cycleLength, periodLength) {
   if (cycleDay <= periodLength) return 'period';
 
   const pmsStart = cycleLength - 4;
@@ -55,15 +61,14 @@ function getPhase(cycleDay, cycleLength, periodLength) {
   return 'luteal';
 }
 
-const PHASE_LABELS = {
-  period: 'Period',
-  follicular: 'Follicular',
-  ovulation: 'Ovulation',
-  luteal: 'Luteal',
-  pms: 'PMS',
-};
-
-function getCycleState(cycles, settings, todayIso = todayISO()) {
+/**
+ * Current cycle snapshot for the dashboard.
+ * @param {Array<{ startDate: string, endDate?: string }>} cycles
+ * @param {{ defaultCycleLength: number, defaultPeriodLength: number }} settings
+ * @param {string} [todayIso]
+ * @returns {object}
+ */
+export function getCycleState(cycles, settings, todayIso = todayISO()) {
   if (!cycles.length) {
     return { hasData: false };
   }
@@ -102,16 +107,20 @@ function getCycleState(cycles, settings, todayIso = todayISO()) {
   };
 }
 
-function formatDisplayDate(iso) {
-  return new Intl.DateTimeFormat('en-AU', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    timeZone: CONFIG.timezone,
-  }).format(parseDateISO(iso));
-}
-
-function getUpcomingPeriods(cycles, settings, count = 3, todayIso = todayISO()) {
+/**
+ * Predict upcoming period start dates.
+ * @param {Array<{ startDate: string }>} cycles
+ * @param {{ defaultCycleLength: number }} settings
+ * @param {number} [count=3]
+ * @param {string} [todayIso]
+ * @returns {object}
+ */
+export function getUpcomingPeriods(
+  cycles,
+  settings,
+  count = CONFIG.ui.upcomingPeriodCount,
+  todayIso = todayISO(),
+) {
   const sorted = [...cycles].sort((a, b) => b.startDate.localeCompare(a.startDate));
   const lastStart = sorted[0].startDate;
   const learnedCycle = averageCycleLength(cycles);
@@ -138,26 +147,13 @@ function getUpcomingPeriods(cycles, settings, count = 3, todayIso = todayISO()) 
     cursor.setDate(cursor.getDate() + cycleLength);
   }
 
-  const first = predictions[0];
-  const isOverdue = daysBetween(lastStart, todayIso) + 1 > cycleLength;
-
   return {
-    next: first,
+    next: predictions[0],
     upcoming: predictions.slice(1),
     cycleLength,
-    basisLabel: learnedCycle ? `${learnedCycle}-day average` : '28-day default',
-    isOverdue,
+    basisLabel: learnedCycle
+      ? `${learnedCycle}-day average`
+      : `${CONFIG.defaults.cycleLength}-day default`,
+    isOverdue: daysBetween(lastStart, todayIso) + 1 > cycleLength,
   };
 }
-
-export {
-  getCycleState,
-  getUpcomingPeriods,
-  getPhase,
-  formatDateISO,
-  formatDisplayDate,
-  todayISO,
-  daysBetween,
-  averageCycleLength,
-  PHASE_LABELS,
-};
