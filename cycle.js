@@ -1,3 +1,5 @@
+import { CONFIG } from './config.js';
+
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 function toDateOnly(date) {
@@ -6,8 +8,14 @@ function toDateOnly(date) {
   return d;
 }
 
-function formatDateISO(date) {
-  return toDateOnly(date).toISOString().slice(0, 10);
+function formatDateISO(date = new Date()) {
+  const offsetMs = CONFIG.timezoneOffsetMinutes * 60 * 1000;
+  const utcMs = date.getTime() + date.getTimezoneOffset() * 60000;
+  const tzDate = new Date(utcMs + offsetMs);
+  const y = tzDate.getUTCFullYear();
+  const m = String(tzDate.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(tzDate.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function daysBetween(start, end) {
