@@ -10,6 +10,10 @@ export const CONFIG = {
     description: "Track Lucy's cycle phases and get supportive partner tips.",
     themeColor: '#c4777b',
   },
+  /** When true, the app only runs as an installed PWA — browser access is blocked. */
+  pwa: {
+    requireInstall: true,
+  },
   /** IANA timezone for all calendar dates (GMT+10, no daylight saving). */
   timezone: 'Australia/Brisbane',
   defaults: {
@@ -21,7 +25,7 @@ export const CONFIG = {
     installDismissKey: 'for-lucy-install-dismissed',
   },
   serviceWorker: {
-    cacheName: 'cycle-companion-v9',
+    cacheName: 'cycle-companion-v10',
   },
   ui: {
     toastDurationMs: 2500,

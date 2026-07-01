@@ -1,6 +1,4 @@
-/**
- * Platform detection for install prompt and PWA behaviour.
- */
+import { CONFIG } from '../config.js';
 
 /**
  * @returns {boolean} True when running as an installed PWA.
@@ -25,11 +23,20 @@ export function getPlatform() {
 }
 
 /**
- * @param {boolean} dismissed
+ * @returns {boolean} True when the app is allowed to run (installed PWA if required).
+ */
+export function canUseApp() {
+  if (!CONFIG.pwa.requireInstall) return true;
+  return isStandalone();
+}
+
+/**
+ * @deprecated Use canUseApp() — kept for tests.
+ * @param {boolean} _dismissed
  * @returns {boolean}
  */
-export function shouldShowInstallPrompt(dismissed) {
-  return !isStandalone() && !dismissed;
+export function shouldShowInstallPrompt(_dismissed = false) {
+  return !canUseApp();
 }
 
 /**

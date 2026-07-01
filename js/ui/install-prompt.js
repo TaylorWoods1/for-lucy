@@ -1,9 +1,9 @@
 import { CONFIG } from '../config.js';
-import { getInstallSteps, getPlatform, shouldShowInstallPrompt } from '../lib/platform.js';
+import { canUseApp, getInstallSteps, getPlatform } from '../lib/platform.js';
 import { escapeHtml } from './dom.js';
 
 /**
- * Read whether the user dismissed the install tutorial.
+ * Read whether the user dismissed the optional install tutorial.
  * @returns {boolean}
  */
 function isDismissed() {
@@ -15,7 +15,7 @@ function isDismissed() {
 }
 
 /**
- * Persist install tutorial dismissal.
+ * Persist optional install tutorial dismissal.
  */
 function setDismissed() {
   try {
@@ -129,18 +129,25 @@ function showStep(overlay, index, direction = 'none') {
  * @param {HTMLElement} overlay
  * @param {number} index
  * @param {number} stepCount
+ * @param {boolean} enforced
  */
-function updatePrimaryAction(overlay, index, stepCount) {
+function updatePrimaryAction(overlay, index, stepCount, enforced) {
   const button = overlay.querySelector('.install-next');
   if (!button) return;
 
   const isLast = index >= stepCount - 1;
+  if (enforced && isLast) {
+    button.textContent = 'Open from Home Screen';
+    button.setAttribute('aria-label', 'Install complete — open For Lucy from your home screen');
+    return;
+  }
+
   button.textContent = isLast ? 'Got it' : 'Next';
   button.setAttribute('aria-label', isLast ? 'Dismiss tutorial' : 'Go to next step');
 }
 
 /**
- * Close and remove the install overlay.
+ * Close and remove the optional install overlay.
  * @param {HTMLElement} overlay
  */
 function closeOverlay(overlay) {
@@ -211,10 +218,50 @@ function bindSwipeNavigation(target, onSwipe) {
 }
 
 /**
- * Initialise the add-to-home-screen tutorial for browser users.
+ * Reload when the app opens in standalone mode after install.
+ */
+function watchForStandaloneLaunch() {
+  const reloadIfStandalone = () => {
+    if (canUseApp()) {
+      window.location.reload();
+    }
+  };
+
+  window.matchMedia('(display-mode: standalone)').addEventListener('change', reloadIfStandalone);
+  window.matchMedia('(display-mode: fullscreen)').addEventListener('change', reloadIfStandalone);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      reloadIfStandalone();
+    }
+  });
+}
+
+/**
+ * Hide the main app shell while the install gate is active.
+ */
+function blockAppShell() {
+  document.querySelector('.app')?.classList.add('app--blocked');
+  document.body.classList.add('body--install-gate');
+}
+
+/**
+ * @param {boolean} enforced
+ * @returns {boolean}
+ */
+function shouldShowGate(enforced) {
+  if (canUseApp()) return false;
+  if (enforced) return true;
+  return !isDismissed();
+}
+
+/**
+ * Initialise the install gate or optional add-to-home-screen tutorial.
  */
 export function initInstallPrompt() {
-  if (!shouldShowInstallPrompt(isDismissed())) return;
+  const enforced = CONFIG.pwa.requireInstall;
+  if (!shouldShowGate(enforced)) return;
+
+  blockAppShell();
 
   const platform = getPlatform();
   const steps = getInstallSteps(platform);
@@ -222,17 +269,35 @@ export function initInstallPrompt() {
   const stepCount = steps.length;
 
   const overlay = document.createElement('div');
-  overlay.className = 'install-overlay';
+  overlay.className = `install-overlay${enforced ? ' install-overlay--enforced' : ''}`;
   overlay.setAttribute('role', 'dialog');
   overlay.setAttribute('aria-modal', 'true');
   overlay.setAttribute('aria-labelledby', 'install-title');
+
+  const closeButton = enforced
+    ? ''
+    : '<button type="button" class="install-close" aria-label="Dismiss tutorial">&times;</button>';
+
+  const leadCopy = enforced
+    ? 'For Lucy only works as an installed app — add it to your home screen to continue.'
+    : 'Install once — open like a real app, even offline.';
+
+  const nativeInstallButton =
+    platform === 'android'
+      ? '<button type="button" class="btn btn-secondary install-native" hidden>Install app</button>'
+      : '';
+
+  const enforcedNote = enforced
+    ? '<p class="install-enforced-note">Browser access is disabled until you open For Lucy from your home screen.</p>'
+    : '';
+
   overlay.innerHTML = `
     <div class="install-card">
-      <button type="button" class="install-close" aria-label="Dismiss tutorial">&times;</button>
-      <div class="install-card__header">
+      ${closeButton}
+      <div class="install-card__header${enforced ? ' install-card__header--centered' : ''}">
         <span class="install-card__emoji" aria-hidden="true">📲</span>
-        <h2 id="install-title">Add ${escapeHtml(title)} to your Home Screen</h2>
-        <p class="install-card__lead">Install once — open like a real app, even offline.</p>
+        <h2 id="install-title">${enforced ? 'Install' : 'Add'} ${escapeHtml(title)} to your Home Screen</h2>
+        <p class="install-card__lead">${leadCopy}</p>
       </div>
       <div class="install-phone" aria-hidden="true">
         <div class="install-phone__screen">
@@ -246,7 +311,9 @@ export function initInstallPrompt() {
       </div>
       <p class="install-swipe-hint">Swipe or tap a dot to change step</p>
       <div class="install-dots" role="tablist" aria-label="Choose install step">${dotsMarkup(steps, 0)}</div>
+      ${nativeInstallButton}
       <button type="button" class="btn btn-primary install-next" aria-label="Go to next step">Next</button>
+      ${enforcedNote}
     </div>
   `;
 
@@ -254,16 +321,18 @@ export function initInstallPrompt() {
   requestAnimationFrame(() => overlay.classList.add('install-overlay--visible'));
 
   let activeStep = 0;
+  /** @type {BeforeInstallPromptEvent | null} */
+  let deferredPrompt = null;
 
   const goToStep = (index) => {
     const nextIndex = ((index % stepCount) + stepCount) % stepCount;
     const direction = getDirection(activeStep, nextIndex, stepCount);
     activeStep = nextIndex;
     showStep(overlay, activeStep, direction);
-    updatePrimaryAction(overlay, activeStep, stepCount);
+    updatePrimaryAction(overlay, activeStep, stepCount, enforced);
   };
 
-  updatePrimaryAction(overlay, activeStep, stepCount);
+  updatePrimaryAction(overlay, activeStep, stepCount, enforced);
 
   overlay.querySelectorAll('.install-dot').forEach((dot) => {
     dot.addEventListener('click', () => {
@@ -291,6 +360,7 @@ export function initInstallPrompt() {
   }
 
   const dismiss = () => {
+    if (enforced) return;
     setDismissed();
     closeOverlay(overlay);
   };
@@ -298,12 +368,37 @@ export function initInstallPrompt() {
   overlay.querySelector('.install-close')?.addEventListener('click', dismiss);
   overlay.querySelector('.install-next')?.addEventListener('click', () => {
     if (activeStep >= stepCount - 1) {
+      if (enforced) return;
       dismiss();
       return;
     }
     goToStep(activeStep + 1);
   });
-  overlay.addEventListener('click', (event) => {
-    if (event.target === overlay) dismiss();
-  });
+
+  if (!enforced) {
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) dismiss();
+    });
+  }
+
+  const nativeButton = overlay.querySelector('.install-native');
+  if (nativeButton) {
+    window.addEventListener('beforeinstallprompt', (event) => {
+      event.preventDefault();
+      deferredPrompt = event;
+      nativeButton.hidden = false;
+    });
+
+    nativeButton.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      await deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      nativeButton.hidden = true;
+    });
+  }
+
+  if (enforced) {
+    watchForStandaloneLaunch();
+  }
 }
