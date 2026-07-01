@@ -1,50 +1,40 @@
-# For Lucy · Cycle Companion
+# Cycle Companion
 
-A gentle, private cycle tracking companion made for Lucy. Track your period, cycle phases, and daily wellbeing — all stored locally in your browser.
+A private, mobile-first PWA to track cycle phases and get supportive partner tips.
 
-**Live site:** [taylorwoods1.github.io/for-lucy](https://taylorwoods1.github.io/for-lucy/)
+## Quick start
 
-## Features
-
-- **Cycle dashboard** — see your current cycle day, phase, and predicted next period
-- **Calendar view** — period, fertile window, and ovulation highlighted at a glance
-- **Daily check-ins** — log mood, symptoms, and notes
-- **Private by default** — all data stays in your browser via localStorage
-- **Export & reset** — download your data or clear it anytime from settings
-
-## Getting started
-
-1. Open the app and tap the settings icon
-2. Enter your last period start date, cycle length, and period length
-3. Save — your calendar and phase insights will update automatically
-4. Use **Today's check-in** to log how you're feeling each day
-
-## Local development
-
-This is a static site — no build step required.
+Serve the folder over HTTP (required for service worker and modules):
 
 ```bash
-# Serve locally (Python 3)
+cd cycle-companion
 python3 -m http.server 8080
 ```
 
-Then open `http://localhost:8080`.
+Open `http://localhost:8080` on your phone (same Wi‑Fi) or use [Add to Home Screen](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Making_PWAs_installable) for an app-like experience.
 
-## Deployment
+## Usage
 
-The site deploys automatically to the `gh-pages` branch when changes are merged to `main`, via `.github/workflows/deploy.yml`.
-
-**One-time setup** (repo admin required):
-
-1. Go to [github.com/TaylorWoods1/for-lucy/settings/pages](https://github.com/TaylorWoods1/for-lucy/settings/pages)
-2. Under **Build and deployment**, set **Source** to **Deploy from a branch**
-3. Choose branch **`gh-pages`** and folder **`/ (root)`**
-4. Save — the site will be live at the URL above within a minute or two
+1. Log when her period started (onboarding or **Period started today**).
+2. Open anytime to see the current phase, days until next period, and support tips.
+3. The app learns her average cycle length after a few logged starts (defaults to 28 days).
 
 ## Privacy
 
-No accounts, no servers, no analytics. Your cycle data never leaves your device unless you choose to export it.
+All data stays in your browser's local storage. Nothing is sent to a server.
 
----
+## Files
 
-Made with care 🌸
+| File | Purpose |
+|------|---------|
+| `index.html` | App shell |
+| `app.js` | UI and interactions |
+| `cycle.js` | Phase math and predictions |
+| `storage.js` | localStorage adapter (cloud-ready) |
+| `tips.js` | Phase-specific support copy |
+| `sw.js` | Offline service worker |
+| `manifest.json` | PWA install metadata |
+
+## Deploy
+
+Upload the `cycle-companion/` folder to any static host (Netlify, GitHub Pages, Cloudflare Pages). No build step needed.
