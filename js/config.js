@@ -21,13 +21,12 @@ export const CONFIG = {
     installDismissKey: 'for-lucy-install-dismissed',
   },
   serviceWorker: {
-    cacheName: 'cycle-companion-v8',
+    cacheName: 'cycle-companion-v9',
   },
   ui: {
     toastDurationMs: 2500,
     upcomingPeriodCount: 3,
     installPrompt: {
-      stepIntervalMs: 7000,
       swipeThresholdPx: 48,
     },
     selectors: {
