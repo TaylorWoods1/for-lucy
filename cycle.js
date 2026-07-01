@@ -2,24 +2,25 @@ import { CONFIG } from './config.js';
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
-function toDateOnly(date) {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
+function parseDateISO(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d);
 }
 
 function formatDateISO(date = new Date()) {
-  const offsetMs = CONFIG.timezoneOffsetMinutes * 60 * 1000;
-  const utcMs = date.getTime() + date.getTimezoneOffset() * 60000;
-  const tzDate = new Date(utcMs + offsetMs);
-  const y = tzDate.getUTCFullYear();
-  const m = String(tzDate.getUTCMonth() + 1).padStart(2, '0');
-  const d = String(tzDate.getUTCDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: CONFIG.timezone,
+  }).format(date);
+}
+
+function todayISO() {
+  return formatDateISO(new Date());
 }
 
 function daysBetween(start, end) {
-  return Math.round((toDateOnly(end) - toDateOnly(start)) / MS_PER_DAY);
+  const startDate = typeof start === 'string' ? parseDateISO(start) : parseDateISO(formatDateISO(start));
+  const endDate = typeof end === 'string' ? parseDateISO(end) : parseDateISO(formatDateISO(end));
+  return Math.round((endDate - startDate) / MS_PER_DAY);
 }
 
 function averageCycleLength(cycles) {
@@ -62,14 +63,14 @@ const PHASE_LABELS = {
   pms: 'PMS',
 };
 
-function getCycleState(cycles, settings, today = new Date()) {
+function getCycleState(cycles, settings, todayIso = todayISO()) {
   if (!cycles.length) {
     return { hasData: false };
   }
 
   const sorted = [...cycles].sort((a, b) => b.startDate.localeCompare(a.startDate));
   const lastStart = sorted[0].startDate;
-  const cycleDay = daysBetween(lastStart, today) + 1;
+  const cycleDay = daysBetween(lastStart, todayIso) + 1;
 
   const learnedCycle = averageCycleLength(cycles);
   const cycleLength = learnedCycle || settings.defaultCycleLength;
@@ -81,7 +82,7 @@ function getCycleState(cycles, settings, today = new Date()) {
   const phase = getPhase(Math.min(cycleDay, cycleLength), cycleLength, periodLength);
   const progress = Math.min(100, Math.max(0, (cycleDay / cycleLength) * 100));
 
-  const nextPeriodDate = new Date(toDateOnly(lastStart));
+  const nextPeriodDate = parseDateISO(lastStart);
   nextPeriodDate.setDate(nextPeriodDate.getDate() + cycleLength);
 
   return {
@@ -105,6 +106,7 @@ export {
   getCycleState,
   getPhase,
   formatDateISO,
+  todayISO,
   daysBetween,
   averageCycleLength,
   PHASE_LABELS,
