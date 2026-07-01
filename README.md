@@ -32,12 +32,14 @@ Then open `http://localhost:8080`.
 
 ## Deployment
 
-The site deploys automatically to GitHub Pages when changes are merged to `main`, via `.github/workflows/deploy.yml`.
+The site deploys automatically to the `gh-pages` branch when changes are merged to `main`, via `.github/workflows/deploy.yml`.
 
-To enable GitHub Pages for the first time:
+**One-time setup** (repo admin required):
 
-1. Go to **Settings → Pages** in the repository
-2. Under **Build and deployment**, set **Source** to **GitHub Actions**
+1. Go to [github.com/TaylorWoods1/for-lucy/settings/pages](https://github.com/TaylorWoods1/for-lucy/settings/pages)
+2. Under **Build and deployment**, set **Source** to **Deploy from a branch**
+3. Choose branch **`gh-pages`** and folder **`/ (root)`**
+4. Save — the site will be live at the URL above within a minute or two
 
 ## Privacy
 
