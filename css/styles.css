@@ -421,3 +421,273 @@ header p {
     padding-bottom: max(2.5rem, env(safe-area-inset-bottom));
   }
 }
+
+/* Add to Home Screen tutorial overlay */
+.install-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  background: rgba(45, 41, 38, 0.55);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.install-overlay--visible {
+  opacity: 1;
+}
+
+.install-overlay--closing {
+  animation: install-fade-out 0.3s ease forwards;
+}
+
+@keyframes install-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+.install-card {
+  position: relative;
+  width: min(100%, 380px);
+  background: var(--surface);
+  border-radius: calc(var(--radius) + 4px);
+  padding: 1.5rem 1.25rem 1.25rem;
+  box-shadow: 0 16px 48px rgba(45, 41, 38, 0.22);
+  transform: translateY(24px);
+  animation: install-slide-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.install-overlay--visible .install-card {
+  transform: translateY(0);
+}
+
+@keyframes install-slide-up {
+  from {
+    transform: translateY(28px);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.install-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.install-card__header {
+  text-align: center;
+  margin-bottom: 1rem;
+  padding-right: 1.5rem;
+}
+
+.install-card__emoji {
+  display: block;
+  font-size: 2rem;
+  margin-bottom: 0.35rem;
+  animation: install-bounce 2s ease-in-out infinite;
+}
+
+@keyframes install-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.install-card__header h2 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--rose-dark);
+  margin-bottom: 0.35rem;
+}
+
+.install-card__lead {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.install-phone {
+  position: relative;
+  width: 88px;
+  height: 140px;
+  margin: 0 auto 1rem;
+  border: 3px solid #2d2926;
+  border-radius: 16px;
+  background: #111;
+  overflow: hidden;
+}
+
+.install-phone__screen {
+  position: absolute;
+  inset: 6px;
+  background: linear-gradient(180deg, var(--rose-light), #fff);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.install-phone__bar {
+  height: 10px;
+  background: rgba(255, 255, 255, 0.65);
+  margin: 8px;
+  border-radius: 999px;
+}
+
+.install-phone__content {
+  height: 60%;
+  margin: 0 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.install-phone__tap {
+  position: absolute;
+  bottom: 10px;
+  right: 14px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(196, 119, 123, 0.35);
+  animation: install-tap 2.4s ease-in-out infinite;
+}
+
+@keyframes install-tap {
+  0%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1.35);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+}
+
+.install-steps {
+  position: relative;
+  min-height: 118px;
+  margin-bottom: 0.75rem;
+}
+
+.install-step {
+  position: absolute;
+  inset: 0;
+  text-align: center;
+  opacity: 0;
+  transform: translateX(12px);
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
+  pointer-events: none;
+}
+
+.install-step--active {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.install-step__icon {
+  position: relative;
+  width: 3rem;
+  height: 3rem;
+  margin: 0 auto 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--rose-light);
+  color: var(--rose-dark);
+  border-radius: 14px;
+}
+
+.install-step__icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.install-step__pulse {
+  position: absolute;
+  inset: -4px;
+  border-radius: 16px;
+  border: 2px solid var(--rose);
+  opacity: 0;
+  animation: install-pulse 2.4s ease-out infinite;
+}
+
+@keyframes install-pulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  70% {
+    transform: scale(1.15);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.install-step h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.install-step p {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  padding: 0 0.5rem;
+}
+
+.install-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.install-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e8e4e1;
+  transition:
+    background 0.3s ease,
+    transform 0.3s ease;
+}
+
+.install-dot--active {
+  background: var(--rose);
+  transform: scale(1.15);
+}
+
+.install-got-it {
+  margin-top: 0.25rem;
+}

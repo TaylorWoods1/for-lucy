@@ -18,9 +18,10 @@ export const CONFIG = {
   },
   storage: {
     key: 'cycle-companion-data',
+    installDismissKey: 'for-lucy-install-dismissed',
   },
   serviceWorker: {
-    cacheName: 'cycle-companion-v6',
+    cacheName: 'cycle-companion-v7',
   },
   ui: {
     toastDurationMs: 2500,
@@ -51,6 +52,8 @@ export const CACHE_ASSETS = [
   './js/ui/toast.js',
   './js/ui/onboarding.js',
   './js/ui/dashboard.js',
+  './js/ui/install-prompt.js',
+  './js/lib/platform.js',
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png',
