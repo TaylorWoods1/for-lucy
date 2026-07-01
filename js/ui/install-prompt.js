@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { canUseApp, getInstallSteps, getPlatform } from '../lib/platform.js';
+import { canUseApp, getAccessBlockReason, getInstallSteps, getPlatform } from '../lib/platform.js';
 import { escapeHtml } from './dom.js';
 
 /**
@@ -248,20 +248,58 @@ function blockAppShell() {
  * @param {boolean} enforced
  * @returns {boolean}
  */
-function shouldShowGate(enforced) {
+function shouldShowInstallGate(enforced) {
   if (canUseApp()) return false;
+  if (getAccessBlockReason() === 'mobile') return false;
   if (enforced) return true;
   return !isDismissed();
 }
 
 /**
- * Initialise the install gate or optional add-to-home-screen tutorial.
+ * Show a non-dismissible gate for desktop/non-mobile visitors.
+ */
+function showMobileOnlyGate() {
+  const { title } = CONFIG.app;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'install-overlay install-overlay--enforced';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-labelledby', 'mobile-only-title');
+  overlay.innerHTML = `
+    <div class="install-card">
+      <div class="install-card__header install-card__header--centered">
+        <span class="install-card__emoji" aria-hidden="true">📱</span>
+        <h2 id="mobile-only-title">${escapeHtml(title)} is mobile-only</h2>
+        <p class="install-card__lead">
+          Open this site on your iPhone or Android phone in Safari or Chrome, then add it to your home screen.
+        </p>
+      </div>
+      <p class="install-enforced-note">
+        Desktop and laptop browsers are not supported.
+      </p>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('install-overlay--visible'));
+}
+
+/**
+ * Initialise access gates or the optional add-to-home-screen tutorial.
  */
 export function initInstallPrompt() {
-  const enforced = CONFIG.pwa.requireInstall;
-  if (!shouldShowGate(enforced)) return;
+  if (canUseApp()) return;
 
   blockAppShell();
+
+  if (getAccessBlockReason() === 'mobile') {
+    showMobileOnlyGate();
+    return;
+  }
+
+  const enforced = CONFIG.pwa.requireInstall;
+  if (!shouldShowInstallGate(enforced)) return;
 
   const platform = getPlatform();
   const steps = getInstallSteps(platform);

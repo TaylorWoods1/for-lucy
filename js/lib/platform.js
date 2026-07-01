@@ -23,11 +23,26 @@ export function getPlatform() {
 }
 
 /**
- * @returns {boolean} True when the app is allowed to run (installed PWA if required).
+ * @returns {boolean} True when running on a phone or tablet (iOS or Android).
+ */
+export function isMobile() {
+  return getPlatform() !== 'other';
+}
+
+/**
+ * @returns {'none' | 'mobile' | 'install'} Why the app is blocked, if at all.
+ */
+export function getAccessBlockReason() {
+  if (CONFIG.platform.requireMobile && !isMobile()) return 'mobile';
+  if (CONFIG.pwa.requireInstall && !isStandalone()) return 'install';
+  return 'none';
+}
+
+/**
+ * @returns {boolean} True when the app is allowed to run.
  */
 export function canUseApp() {
-  if (!CONFIG.pwa.requireInstall) return true;
-  return isStandalone();
+  return getAccessBlockReason() === 'none';
 }
 
 /**

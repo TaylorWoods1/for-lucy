@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-function stubBrowser({ standalone = false, userAgent = 'Mozilla/5.0 (iPhone)' } = {}) {
+const IPHONE_UA =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
+const DESKTOP_UA =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+function stubBrowser({ standalone = false, userAgent = IPHONE_UA } = {}) {
   const navigator = { standalone: undefined, userAgent };
   vi.stubGlobal('navigator', navigator);
   vi.stubGlobal('window', {
@@ -33,15 +38,39 @@ describe('platform', () => {
     expect(isStandalone()).toBe(true);
   });
 
-  it('blocks browser usage when install is required', async () => {
-    const { canUseApp } = await import('../js/lib/platform.js');
+  it('detects mobile user agents', async () => {
+    const { isMobile, getPlatform } = await import('../js/lib/platform.js');
+    expect(isMobile()).toBe(true);
+    expect(getPlatform()).toBe('ios');
+  });
+
+  it('detects desktop user agents', async () => {
+    stubBrowser({ userAgent: DESKTOP_UA });
+    vi.resetModules();
+    const { isMobile, getPlatform } = await import('../js/lib/platform.js');
+    expect(isMobile()).toBe(false);
+    expect(getPlatform()).toBe('other');
+  });
+
+  it('blocks desktop browsers even when installed as a PWA', async () => {
+    stubBrowser({ standalone: true, userAgent: DESKTOP_UA });
+    vi.resetModules();
+    const { canUseApp, getAccessBlockReason } = await import('../js/lib/platform.js');
+    expect(getAccessBlockReason()).toBe('mobile');
     expect(canUseApp()).toBe(false);
   });
 
-  it('allows usage when installed as a PWA', async () => {
+  it('blocks mobile browser usage when install is required', async () => {
+    const { canUseApp, getAccessBlockReason } = await import('../js/lib/platform.js');
+    expect(getAccessBlockReason()).toBe('install');
+    expect(canUseApp()).toBe(false);
+  });
+
+  it('allows usage on mobile when installed as a PWA', async () => {
     stubBrowser({ standalone: true });
     vi.resetModules();
-    const { canUseApp } = await import('../js/lib/platform.js');
+    const { canUseApp, getAccessBlockReason } = await import('../js/lib/platform.js');
+    expect(getAccessBlockReason()).toBe('none');
     expect(canUseApp()).toBe(true);
   });
 
@@ -58,7 +87,7 @@ describe('platform', () => {
     expect(shouldShowInstallPrompt(true)).toBe(true);
   });
 
-  it('hides install gate when running as installed PWA', async () => {
+  it('hides install gate when running as installed PWA on mobile', async () => {
     stubBrowser({ standalone: true });
     vi.resetModules();
     const { shouldShowInstallPrompt } = await import('../js/lib/platform.js');

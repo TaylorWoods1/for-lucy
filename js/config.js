@@ -10,7 +10,10 @@ export const CONFIG = {
     description: "Track Lucy's cycle phases and get supportive partner tips.",
     themeColor: '#c4777b',
   },
-  /** When true, the app only runs as an installed PWA — browser access is blocked. */
+  /** Device and install requirements — both must pass for the app to run. */
+  platform: {
+    requireMobile: true,
+  },
   pwa: {
     requireInstall: true,
   },
@@ -25,7 +28,7 @@ export const CONFIG = {
     installDismissKey: 'for-lucy-install-dismissed',
   },
   serviceWorker: {
-    cacheName: 'cycle-companion-v10',
+    cacheName: 'cycle-companion-v11',
   },
   ui: {
     toastDurationMs: 2500,
