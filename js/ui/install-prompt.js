@@ -2,9 +2,6 @@ import { CONFIG } from '../config.js';
 import { getInstallSteps, getPlatform, shouldShowInstallPrompt } from '../lib/platform.js';
 import { escapeHtml } from './dom.js';
 
-/** @type {ReturnType<typeof setInterval> | null} */
-let stepTimer = null;
-
 /**
  * Read whether the user dismissed the install tutorial.
  * @returns {boolean}
@@ -128,14 +125,25 @@ function showStep(overlay, index, direction = 'none') {
 }
 
 /**
+ * Update the primary action button label for the current step.
+ * @param {HTMLElement} overlay
+ * @param {number} index
+ * @param {number} stepCount
+ */
+function updatePrimaryAction(overlay, index, stepCount) {
+  const button = overlay.querySelector('.install-next');
+  if (!button) return;
+
+  const isLast = index >= stepCount - 1;
+  button.textContent = isLast ? 'Got it' : 'Next';
+  button.setAttribute('aria-label', isLast ? 'Dismiss tutorial' : 'Go to next step');
+}
+
+/**
  * Close and remove the install overlay.
  * @param {HTMLElement} overlay
  */
 function closeOverlay(overlay) {
-  if (stepTimer) {
-    clearInterval(stepTimer);
-    stepTimer = null;
-  }
   overlay.classList.add('install-overlay--closing');
   overlay.addEventListener(
     'animationend',
@@ -238,7 +246,7 @@ export function initInstallPrompt() {
       </div>
       <p class="install-swipe-hint">Swipe or tap a dot to change step</p>
       <div class="install-dots" role="tablist" aria-label="Choose install step">${dotsMarkup(steps, 0)}</div>
-      <button type="button" class="btn btn-primary install-got-it">Got it</button>
+      <button type="button" class="btn btn-primary install-next" aria-label="Go to next step">Next</button>
     </div>
   `;
 
@@ -247,22 +255,15 @@ export function initInstallPrompt() {
 
   let activeStep = 0;
 
-  const resetAutoAdvance = () => {
-    if (stepTimer) clearInterval(stepTimer);
-    stepTimer = setInterval(() => {
-      goToStep(activeStep + 1, { auto: true });
-    }, CONFIG.ui.installPrompt.stepIntervalMs);
-  };
-
-  const goToStep = (index, { auto = false } = {}) => {
+  const goToStep = (index) => {
     const nextIndex = ((index % stepCount) + stepCount) % stepCount;
     const direction = getDirection(activeStep, nextIndex, stepCount);
     activeStep = nextIndex;
     showStep(overlay, activeStep, direction);
-    if (!auto) resetAutoAdvance();
+    updatePrimaryAction(overlay, activeStep, stepCount);
   };
 
-  resetAutoAdvance();
+  updatePrimaryAction(overlay, activeStep, stepCount);
 
   overlay.querySelectorAll('.install-dot').forEach((dot) => {
     dot.addEventListener('click', () => {
@@ -295,7 +296,13 @@ export function initInstallPrompt() {
   };
 
   overlay.querySelector('.install-close')?.addEventListener('click', dismiss);
-  overlay.querySelector('.install-got-it')?.addEventListener('click', dismiss);
+  overlay.querySelector('.install-next')?.addEventListener('click', () => {
+    if (activeStep >= stepCount - 1) {
+      dismiss();
+      return;
+    }
+    goToStep(activeStep + 1);
+  });
   overlay.addEventListener('click', (event) => {
     if (event.target === overlay) dismiss();
   });
