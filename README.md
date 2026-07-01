@@ -37,4 +37,4 @@ All data stays in your browser's local storage. Nothing is sent to a server.
 
 ## Deploy
 
-Upload the `cycle-companion/` folder to any static host (Netlify, GitHub Pages, Cloudflare Pages). No build step needed.
+Live at [taylorwoods1.github.io/for-lucy](https://taylorwoods1.github.io/for-lucy/). Pushes to `main` deploy to the `gh-pages` branch via GitHub Actions. No build step needed.
