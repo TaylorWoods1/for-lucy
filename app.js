@@ -1,5 +1,5 @@
 import Storage from './storage.js';
-import { getCycleState, todayISO } from './cycle.js';
+import { getCycleState, getUpcomingPeriods, todayISO } from './cycle.js';
 import { getTipsForPhase } from './tips.js';
 import { CONFIG } from './config.js';
 
@@ -37,13 +37,24 @@ function renderOnboarding() {
   });
 }
 
-function renderDashboard(state) {
+function renderDashboard(state, cycles, settings) {
   const tips = getTipsForPhase(state.phase);
   const tipsHtml = tips.map((t) => `<li>${t}</li>`).join('');
+  const upcoming = getUpcomingPeriods(cycles, settings);
 
   const countdownHtml = state.isOverdue
     ? `<span class="overdue">${name}'s period may start <strong>any day now</strong></span>`
     : `About <strong>${state.daysUntil}</strong> day${state.daysUntil === 1 ? '' : 's'} until ${name}'s next period`;
+
+  const nextExpectedHtml = upcoming.isOverdue
+    ? `<p class="prediction-primary prediction-primary--overdue">Next expected: <strong>${upcoming.next.label}</strong></p>`
+    : `<p class="prediction-primary">Next expected: <strong>${upcoming.next.label}</strong></p>`;
+
+  const upcomingHtml = upcoming.upcoming.length
+    ? `<ul class="prediction-list">${upcoming.upcoming.map((p) =>
+        `<li><span>${p.label}</span><span>${p.daysUntil} days</span></li>`
+      ).join('')}</ul>`
+    : '';
 
   const metaParts = [];
   if (state.learnedCycle) metaParts.push(`${state.learnedCycle}-day avg cycle`);
@@ -63,6 +74,13 @@ function renderDashboard(state) {
         </div>
       </div>
       <p class="countdown">${countdownHtml}</p>
+    </section>
+
+    <section class="predictions-card">
+      <h2>Upcoming periods</h2>
+      ${nextExpectedHtml}
+      <p class="prediction-basis">Based on ${upcoming.basisLabel} · updates as you log more starts</p>
+      ${upcomingHtml ? `<p class="prediction-subhead">Then</p>${upcomingHtml}` : ''}
     </section>
 
     <section class="tips-card">
@@ -103,7 +121,7 @@ function render() {
   }
 
   const state = getCycleState(cycles, settings);
-  renderDashboard(state);
+  renderDashboard(state, cycles, settings);
 }
 
 document.addEventListener('DOMContentLoaded', () => {

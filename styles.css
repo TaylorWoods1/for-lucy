@@ -146,6 +146,74 @@ header p {
   color: var(--rose);
 }
 
+.predictions-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow);
+  margin-bottom: 1rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.predictions-card h2 {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--rose-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.75rem;
+}
+
+.prediction-primary {
+  font-size: 1.125rem;
+  color: var(--text);
+  margin-bottom: 0.35rem;
+}
+
+.prediction-primary strong {
+  color: var(--rose-dark);
+  font-weight: 700;
+}
+
+.prediction-primary--overdue strong {
+  color: var(--rose);
+}
+
+.prediction-basis {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.prediction-subhead {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.5rem;
+}
+
+.prediction-list {
+  list-style: none;
+}
+
+.prediction-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0;
+  border-top: 1px solid #f0ece9;
+  font-size: 0.9375rem;
+}
+
+.prediction-list li span:last-child {
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
 .tips-card {
   background: var(--surface);
   border-radius: var(--radius);

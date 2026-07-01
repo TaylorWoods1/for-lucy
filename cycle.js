@@ -102,10 +102,60 @@ function getCycleState(cycles, settings, todayIso = todayISO()) {
   };
 }
 
+function formatDisplayDate(iso) {
+  return new Intl.DateTimeFormat('en-AU', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    timeZone: CONFIG.timezone,
+  }).format(parseDateISO(iso));
+}
+
+function getUpcomingPeriods(cycles, settings, count = 3, todayIso = todayISO()) {
+  const sorted = [...cycles].sort((a, b) => b.startDate.localeCompare(a.startDate));
+  const lastStart = sorted[0].startDate;
+  const learnedCycle = averageCycleLength(cycles);
+  const cycleLength = learnedCycle || settings.defaultCycleLength;
+
+  let cursor = parseDateISO(lastStart);
+  cursor.setDate(cursor.getDate() + cycleLength);
+
+  const today = parseDateISO(todayIso);
+  let guard = 0;
+  while (cursor < today && guard < 24) {
+    cursor.setDate(cursor.getDate() + cycleLength);
+    guard += 1;
+  }
+
+  const predictions = [];
+  for (let i = 0; i < count; i += 1) {
+    const iso = formatDateISO(cursor);
+    predictions.push({
+      date: iso,
+      label: formatDisplayDate(iso),
+      daysUntil: daysBetween(todayIso, iso),
+    });
+    cursor.setDate(cursor.getDate() + cycleLength);
+  }
+
+  const first = predictions[0];
+  const isOverdue = daysBetween(lastStart, todayIso) + 1 > cycleLength;
+
+  return {
+    next: first,
+    upcoming: predictions.slice(1),
+    cycleLength,
+    basisLabel: learnedCycle ? `${learnedCycle}-day average` : '28-day default',
+    isOverdue,
+  };
+}
+
 export {
   getCycleState,
+  getUpcomingPeriods,
   getPhase,
   formatDateISO,
+  formatDisplayDate,
   todayISO,
   daysBetween,
   averageCycleLength,
