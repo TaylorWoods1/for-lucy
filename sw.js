@@ -1,4 +1,4 @@
-const CACHE = 'cycle-companion-v3';
+const CACHE = 'cycle-companion-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -32,16 +32,16 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const fetched = fetch(event.request).then((response) => {
+    fetch(event.request)
+      .then((response) => {
         if (response.ok) {
           const clone = response.clone();
           caches.open(CACHE).then((cache) => cache.put(event.request, clone));
         }
         return response;
-      });
-      return cached || fetched;
-    })
+      })
+      .catch(() => caches.match(event.request))
   );
 });

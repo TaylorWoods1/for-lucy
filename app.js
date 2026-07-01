@@ -1,5 +1,5 @@
 import Storage from './storage.js';
-import { getCycleState, formatDateISO } from './cycle.js';
+import { getCycleState, todayISO } from './cycle.js';
 import { getTipsForPhase } from './tips.js';
 import { CONFIG } from './config.js';
 
@@ -15,7 +15,7 @@ function showToast(message) {
 }
 
 function renderOnboarding() {
-  const today = formatDateISO(new Date());
+  const today = todayISO();
   $('#main').innerHTML = `
     <div class="onboarding">
       <h2>Hey — let's track ${name}'s cycle</h2>
@@ -78,14 +78,14 @@ function renderDashboard(state) {
   `;
 
   $('#btn-log-today').addEventListener('click', () => {
-    const today = formatDateISO(new Date());
+    const today = todayISO();
     Storage.saveCycle({ startDate: today });
     showToast('Period start logged');
     render();
   });
 
   $('#btn-log-past').addEventListener('click', () => {
-    const date = prompt('Enter period start date (YYYY-MM-DD):', formatDateISO(new Date()));
+    const date = prompt('Enter period start date (YYYY-MM-DD):', todayISO());
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
     Storage.saveCycle({ startDate: date });
     showToast('Period start saved');
