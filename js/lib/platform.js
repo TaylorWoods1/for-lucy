@@ -1,18 +1,4 @@
-/**
- * Platform detection for install prompt and PWA behaviour.
- */
-
-/**
- * @returns {boolean} True when running as an installed PWA.
- */
-export function isStandalone() {
-  return (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.matchMedia('(display-mode: fullscreen)').matches ||
-    /** @type {Window & { navigator: Navigator & { standalone?: boolean } }} */ (window).navigator
-      .standalone === true
-  );
-}
+import { CONFIG } from '../config.js';
 
 /**
  * @returns {'ios' | 'android' | 'other'}
@@ -25,11 +11,60 @@ export function getPlatform() {
 }
 
 /**
- * @param {boolean} dismissed
+ * @returns {boolean} True when running on a phone or tablet (iOS or Android).
+ */
+export function isMobile() {
+  return getPlatform() !== 'other';
+}
+
+/**
+ * @returns {boolean} True when running as an installed PWA (not a browser tab).
+ */
+export function isStandalone() {
+  if (typeof window.matchMedia === 'function') {
+    // Safari 16.4+, Chrome, etc. — explicit browser tab must never pass.
+    if (window.matchMedia('(display-mode: browser)').matches) {
+      return false;
+    }
+  }
+
+  const platform = getPlatform();
+  const nav = /** @type {Navigator & { standalone?: boolean }} */ (navigator);
+
+  if (platform === 'ios') {
+    // iOS Safari: navigator.standalone is the canonical home-screen signal.
+    if (nav.standalone === true) {
+      return true;
+    }
+    return window.matchMedia('(display-mode: standalone)').matches;
+  }
+
+  return window.matchMedia('(display-mode: standalone)').matches;
+}
+
+/**
+ * @returns {'none' | 'mobile' | 'install'} Why the app is blocked, if at all.
+ */
+export function getAccessBlockReason() {
+  if (CONFIG.platform.requireMobile && !isMobile()) return 'mobile';
+  if (CONFIG.pwa.requireInstall && !isStandalone()) return 'install';
+  return 'none';
+}
+
+/**
+ * @returns {boolean} True when the app is allowed to run.
+ */
+export function canUseApp() {
+  return getAccessBlockReason() === 'none';
+}
+
+/**
+ * @deprecated Use canUseApp() — kept for tests.
+ * @param {boolean} _dismissed
  * @returns {boolean}
  */
-export function shouldShowInstallPrompt(dismissed) {
-  return !isStandalone() && !dismissed;
+export function shouldShowInstallPrompt(_dismissed = false) {
+  return !canUseApp();
 }
 
 /**

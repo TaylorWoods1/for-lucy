@@ -11,6 +11,7 @@ A private, mobile-first PWA to track cycle phases and get supportive partner tip
 - GMT+10 calendar dates via `Australia/Brisbane`
 - Local-only storage — nothing leaves the device
 - Installable PWA with offline shell
+- **Mobile + PWA only** — desktop browsers are blocked; on phone, the app only runs when opened from the home screen
 
 ## Quick start
 
@@ -21,6 +22,8 @@ python3 -m http.server 8080
 ```
 
 Open `http://localhost:8080`. Use Chrome or Safari for the best PWA experience.
+
+> **Note:** With `CONFIG.platform.requireMobile` and `CONFIG.pwa.requireInstall` enabled (default), desktop browsers see a mobile-only gate. On mobile, a browser tab shows the install gate instead of the dashboard. To test locally, use Chrome DevTools device emulation with a phone user agent and simulate standalone display mode, or temporarily disable the flags in `js/config.js`.
 
 ## Project structure
 

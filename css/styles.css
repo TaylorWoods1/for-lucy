@@ -422,7 +422,17 @@ header p {
   }
 }
 
-/* Add to Home Screen tutorial overlay */
+/* Access gates — hide app until mobile + installed PWA checks pass */
+html.access-blocked .app,
+.app--blocked {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.body--install-gate {
+  overflow: hidden;
+}
+
 .install-overlay {
   position: fixed;
   inset: 0;
@@ -436,6 +446,18 @@ header p {
   backdrop-filter: blur(4px);
   opacity: 0;
   transition: opacity 0.35s ease;
+}
+
+.install-overlay--enforced {
+  align-items: center;
+  padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+  background: var(--bg);
+  backdrop-filter: none;
+}
+
+.install-overlay--enforced .install-card {
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
 }
 
 .install-overlay--visible {
@@ -476,6 +498,22 @@ header p {
     transform: translateY(0);
     opacity: 1;
   }
+}
+
+.install-card__header--centered {
+  padding-right: 0;
+}
+
+.install-enforced-note {
+  margin-top: 0.85rem;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.install-native {
+  margin-bottom: 0.65rem;
 }
 
 .install-close {

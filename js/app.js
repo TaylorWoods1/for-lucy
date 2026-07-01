@@ -1,5 +1,6 @@
 import Storage from './lib/storage.js';
 import { getCycleState } from './lib/cycle.js';
+import { canUseApp } from './lib/platform.js';
 import { renderOnboarding } from './ui/onboarding.js';
 import { renderDashboard } from './ui/dashboard.js';
 import { initInstallPrompt } from './ui/install-prompt.js';
@@ -20,7 +21,9 @@ function render() {
 
 document.addEventListener('DOMContentLoaded', () => {
   initInstallPrompt();
-  render();
+  if (canUseApp()) {
+    render();
+  }
 });
 
 if ('serviceWorker' in navigator) {

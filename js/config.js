@@ -10,6 +10,13 @@ export const CONFIG = {
     description: "Track Lucy's cycle phases and get supportive partner tips.",
     themeColor: '#c4777b',
   },
+  /** Device and install requirements — both must pass for the app to run. */
+  platform: {
+    requireMobile: true,
+  },
+  pwa: {
+    requireInstall: true,
+  },
   /** IANA timezone for all calendar dates (GMT+10, no daylight saving). */
   timezone: 'Australia/Brisbane',
   defaults: {
@@ -21,7 +28,7 @@ export const CONFIG = {
     installDismissKey: 'for-lucy-install-dismissed',
   },
   serviceWorker: {
-    cacheName: 'cycle-companion-v9',
+    cacheName: 'cycle-companion-v12',
   },
   ui: {
     toastDurationMs: 2500,
@@ -46,6 +53,7 @@ export const CACHE_ASSETS = [
   './css/styles.css',
   './manifest.json',
   './js/app.js',
+  './js/early-gate.js',
   './js/config.js',
   './js/lib/dates.js',
   './js/lib/cycle.js',
