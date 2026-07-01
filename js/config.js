@@ -28,7 +28,7 @@ export const CONFIG = {
     installDismissKey: 'for-lucy-install-dismissed',
   },
   serviceWorker: {
-    cacheName: 'cycle-companion-v11',
+    cacheName: 'cycle-companion-v12',
   },
   ui: {
     toastDurationMs: 2500,
@@ -53,6 +53,7 @@ export const CACHE_ASSETS = [
   './css/styles.css',
   './manifest.json',
   './js/app.js',
+  './js/early-gate.js',
   './js/config.js',
   './js/lib/dates.js',
   './js/lib/cycle.js',

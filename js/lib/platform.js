@@ -1,18 +1,6 @@
 import { CONFIG } from '../config.js';
 
 /**
- * @returns {boolean} True when running as an installed PWA.
- */
-export function isStandalone() {
-  return (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.matchMedia('(display-mode: fullscreen)').matches ||
-    /** @type {Window & { navigator: Navigator & { standalone?: boolean } }} */ (window).navigator
-      .standalone === true
-  );
-}
-
-/**
  * @returns {'ios' | 'android' | 'other'}
  */
 export function getPlatform() {
@@ -27,6 +15,31 @@ export function getPlatform() {
  */
 export function isMobile() {
   return getPlatform() !== 'other';
+}
+
+/**
+ * @returns {boolean} True when running as an installed PWA (not a browser tab).
+ */
+export function isStandalone() {
+  if (typeof window.matchMedia === 'function') {
+    // Safari 16.4+, Chrome, etc. — explicit browser tab must never pass.
+    if (window.matchMedia('(display-mode: browser)').matches) {
+      return false;
+    }
+  }
+
+  const platform = getPlatform();
+  const nav = /** @type {Navigator & { standalone?: boolean }} */ (navigator);
+
+  if (platform === 'ios') {
+    // iOS Safari: navigator.standalone is the canonical home-screen signal.
+    if (nav.standalone === true) {
+      return true;
+    }
+    return window.matchMedia('(display-mode: standalone)').matches;
+  }
+
+  return window.matchMedia('(display-mode: standalone)').matches;
 }
 
 /**

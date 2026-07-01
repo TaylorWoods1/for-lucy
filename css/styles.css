@@ -422,7 +422,8 @@ header p {
   }
 }
 
-/* Add to Home Screen tutorial / install gate */
+/* Access gates — hide app until mobile + installed PWA checks pass */
+html.access-blocked .app,
 .app--blocked {
   visibility: hidden;
   pointer-events: none;

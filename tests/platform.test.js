@@ -6,14 +6,14 @@ const DESKTOP_UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 function stubBrowser({ standalone = false, userAgent = IPHONE_UA } = {}) {
-  const navigator = { standalone: undefined, userAgent };
+  const navigator = { standalone: standalone ? true : undefined, userAgent };
   vi.stubGlobal('navigator', navigator);
   vi.stubGlobal('window', {
     navigator,
     matchMedia: (query) => ({
       matches:
         (query === '(display-mode: standalone)' && standalone) ||
-        (query === '(display-mode: fullscreen)' && standalone),
+        (query === '(display-mode: browser)' && !standalone),
       addEventListener: vi.fn(),
     }),
     location: { reload: vi.fn() },
@@ -30,6 +30,35 @@ describe('platform', () => {
   it('detects non-standalone browser mode', async () => {
     const { isStandalone } = await import('../js/lib/platform.js');
     expect(isStandalone()).toBe(false);
+  });
+
+  it('detects iOS browser tabs via display-mode: browser', async () => {
+    stubBrowser({ standalone: false });
+    const { isStandalone, canUseApp } = await import('../js/lib/platform.js');
+    expect(isStandalone()).toBe(false);
+    expect(canUseApp()).toBe(false);
+  });
+
+  it('detects iOS home screen via navigator.standalone', async () => {
+    stubBrowser({ standalone: true });
+    vi.resetModules();
+    stubBrowser({ standalone: true });
+    const navigator = { standalone: true, userAgent: IPHONE_UA };
+    vi.stubGlobal('navigator', navigator);
+    vi.stubGlobal('window', {
+      navigator,
+      matchMedia: (query) => ({
+        matches:
+          query === '(display-mode: standalone)' || (query === '(display-mode: browser)' && false),
+        addEventListener: vi.fn(),
+      }),
+      location: { reload: vi.fn() },
+      addEventListener: vi.fn(),
+    });
+    vi.resetModules();
+    const { isStandalone, canUseApp } = await import('../js/lib/platform.js');
+    expect(isStandalone()).toBe(true);
+    expect(canUseApp()).toBe(true);
   });
 
   it('detects standalone display mode', async () => {
