@@ -112,21 +112,25 @@ export function personalizationPanelHtml() {
   const name = Storage.getSettings().partnerName;
 
   return `
-    <details class="panel">
+    <details class="panel panel--personalization">
       <summary>Personalization</summary>
-      <p class="panel-hint">Change how the app addresses your partner across tips and predictions.</p>
-      <label for="settings-partner-name" class="field-label">Her name</label>
-      <input
-        type="text"
-        id="settings-partner-name"
-        class="text-input"
-        value="${escapeHtml(name)}"
-        maxlength="40"
-        autocomplete="off"
-        autocapitalize="words"
-        placeholder="e.g. Lucy"
-      >
-      <button type="button" class="btn btn-secondary panel-action" id="btn-save-partner-name">Save name</button>
+      <div class="panel-body">
+        <p class="panel-hint">Change how the app addresses your partner across tips and predictions.</p>
+        <label for="settings-partner-name" class="field-label">Her name</label>
+        <input
+          type="text"
+          id="settings-partner-name"
+          class="text-input"
+          value="${escapeHtml(name)}"
+          maxlength="40"
+          autocomplete="off"
+          autocapitalize="words"
+          enterkeyhint="done"
+          inputmode="text"
+          placeholder="e.g. Lucy"
+        >
+        <button type="button" class="btn btn-secondary panel-action" id="btn-save-partner-name">Save name</button>
+      </div>
     </details>
   `;
 }
