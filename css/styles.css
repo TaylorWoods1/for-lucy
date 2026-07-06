@@ -357,6 +357,43 @@ header p {
   font-size: 0.9375rem;
 }
 
+.field-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+  text-align: left;
+}
+
+.text-input {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--rose-light);
+  border-radius: 12px;
+  font-size: 1rem;
+  color: var(--text);
+  background: var(--surface);
+}
+
+.text-input:focus {
+  outline: 2px solid var(--rose);
+  outline-offset: 1px;
+}
+
+.panel .field-label {
+  margin-top: 0.25rem;
+}
+
+.panel .text-input {
+  margin-bottom: 0.75rem;
+}
+
+.panel-action {
+  width: 100%;
+}
+
 .date-input-wrap {
   width: 100%;
   min-width: 0;

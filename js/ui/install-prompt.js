@@ -1,5 +1,6 @@
 import { CONFIG } from '../config.js';
 import { canUseApp, getAccessBlockReason, getInstallSteps, getPlatform } from '../lib/platform.js';
+import { getAppTitle } from '../lib/profile.js';
 import { escapeHtml } from './dom.js';
 
 /**
@@ -135,10 +136,11 @@ function updatePrimaryAction(overlay, index, stepCount, enforced) {
   const button = overlay.querySelector('.install-next');
   if (!button) return;
 
+  const title = getAppTitle();
   const isLast = index >= stepCount - 1;
   if (enforced && isLast) {
     button.textContent = 'Open from Home Screen';
-    button.setAttribute('aria-label', 'Install complete — open For Lucy from your home screen');
+    button.setAttribute('aria-label', `Install complete — open ${title} from your home screen`);
     return;
   }
 
@@ -259,7 +261,7 @@ function shouldShowInstallGate(enforced) {
  * Show a non-dismissible gate for desktop/non-mobile visitors.
  */
 function showMobileOnlyGate() {
-  const { title } = CONFIG.app;
+  const title = getAppTitle();
 
   const overlay = document.createElement('div');
   overlay.className = 'install-overlay install-overlay--enforced';
@@ -303,7 +305,7 @@ export function initInstallPrompt() {
 
   const platform = getPlatform();
   const steps = getInstallSteps(platform);
-  const { title } = CONFIG.app;
+  const title = getAppTitle();
   const stepCount = steps.length;
 
   const overlay = document.createElement('div');
@@ -317,7 +319,7 @@ export function initInstallPrompt() {
     : '<button type="button" class="install-close" aria-label="Dismiss tutorial">&times;</button>';
 
   const leadCopy = enforced
-    ? 'For Lucy only works as an installed app — add it to your home screen to continue.'
+    ? `${title} only works as an installed app — add it to your home screen to continue.`
     : 'Install once — open like a real app, even offline.';
 
   const nativeInstallButton =
@@ -326,7 +328,7 @@ export function initInstallPrompt() {
       : '';
 
   const enforcedNote = enforced
-    ? '<p class="install-enforced-note">Browser access is disabled until you open For Lucy from your home screen.</p>'
+    ? `<p class="install-enforced-note">Browser access is disabled until you open ${escapeHtml(title)} from your home screen.</p>`
     : '';
 
   overlay.innerHTML = `

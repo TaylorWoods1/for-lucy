@@ -4,10 +4,11 @@
  */
 export const CONFIG = {
   app: {
-    name: 'Lucy',
-    title: 'For Lucy',
+    title: 'Cycle Companion',
     tagline: 'Show up when it matters most',
-    description: "Track Lucy's cycle phases and get supportive partner tips.",
+    description: 'Track cycle phases and get supportive partner tips.',
+    /** Fallback copy before a partner name is saved in settings. */
+    defaultName: 'her',
     themeColor: '#c4777b',
   },
   /** Device and install requirements — both must pass for the app to run. */
@@ -39,10 +40,10 @@ export const CONFIG = {
   },
   storage: {
     key: 'cycle-companion-data',
-    installDismissKey: 'for-lucy-install-dismissed',
+    installDismissKey: 'cycle-companion-install-dismissed',
   },
   serviceWorker: {
-    cacheName: 'cycle-companion-v13',
+    cacheName: 'cycle-companion-v14',
   },
   ui: {
     toastDurationMs: 2500,
@@ -81,6 +82,7 @@ export const CACHE_ASSETS = [
   './js/ui/history.js',
   './js/ui/install-prompt.js',
   './js/lib/platform.js',
+  './js/lib/profile.js',
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png',

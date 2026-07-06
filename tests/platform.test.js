@@ -104,10 +104,11 @@ describe('platform', () => {
   });
 
   it('provides platform-specific install steps', async () => {
-    const { getInstallSteps, INSTALL_STEPS } = await import('../js/lib/platform.js');
+    const { getInstallSteps } = await import('../js/lib/platform.js');
     expect(getInstallSteps('ios')[0].title).toBe('Tap Share');
     expect(getInstallSteps('android')[1].title).toBe('Install the app');
-    expect(getInstallSteps('other')).toHaveLength(INSTALL_STEPS.other.length);
+    expect(getInstallSteps('other')).toHaveLength(2);
+    expect(getInstallSteps('ios')[2].body).toContain('Cycle Companion');
   });
 
   it('shows install gate in browser when install is required', async () => {

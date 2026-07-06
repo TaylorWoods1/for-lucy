@@ -1,4 +1,5 @@
 import { CONFIG } from '../config.js';
+import { getAppTitle } from './profile.js';
 
 /**
  * @returns {'ios' | 'android' | 'other'}
@@ -71,51 +72,51 @@ export function shouldShowInstallPrompt(_dismissed = false) {
  * @typedef {{ title: string, body: string, icon: string }} InstallStep
  */
 
-/** @type {Record<'ios' | 'android' | 'other', InstallStep[]>} */
-export const INSTALL_STEPS = {
+/** @type {Record<'ios' | 'android' | 'other', Omit<InstallStep, 'title' | 'body'> & { body: (title: string) => string; title?: (title: string) => string }>[]} */
+const INSTALL_STEP_TEMPLATES = {
   ios: [
     {
       title: 'Tap Share',
-      body: 'Tap the Share button at the bottom of Safari.',
+      body: () => 'Tap the Share button at the bottom of Safari.',
       icon: 'share',
     },
     {
       title: 'Add to Home Screen',
-      body: 'Scroll the menu and tap "Add to Home Screen".',
+      body: () => 'Scroll the menu and tap "Add to Home Screen".',
       icon: 'add',
     },
     {
       title: 'Open from Home Screen',
-      body: 'Tap Add — For Lucy will appear on your home screen like an app.',
+      body: (title) => `Tap Add — ${title} will appear on your home screen like an app.`,
       icon: 'home',
     },
   ],
   android: [
     {
       title: 'Open the menu',
-      body: 'Tap the three-dot menu in the top-right of Chrome.',
+      body: () => 'Tap the three-dot menu in the top-right of Chrome.',
       icon: 'menu',
     },
     {
       title: 'Install the app',
-      body: 'Tap "Install app" or "Add to Home screen".',
+      body: () => 'Tap "Install app" or "Add to Home screen".',
       icon: 'add',
     },
     {
       title: 'Open from Home Screen',
-      body: 'Confirm — then launch For Lucy from your home screen anytime.',
+      body: (title) => `Confirm — then launch ${title} from your home screen anytime.`,
       icon: 'home',
     },
   ],
   other: [
     {
-      title: 'Install For Lucy',
-      body: 'Look for the install icon in your browser address bar.',
+      title: (title) => `Install ${title}`,
+      body: () => 'Look for the install icon in your browser address bar.',
       icon: 'add',
     },
     {
       title: 'Or use on mobile',
-      body: 'For the best experience, open this site in Safari or Chrome on your phone.',
+      body: () => 'For the best experience, open this site in Safari or Chrome on your phone.',
       icon: 'home',
     },
   ],
@@ -126,5 +127,12 @@ export const INSTALL_STEPS = {
  * @returns {InstallStep[]}
  */
 export function getInstallSteps(platform) {
-  return INSTALL_STEPS[platform] ?? INSTALL_STEPS.other;
+  const title = getAppTitle();
+  const templates = INSTALL_STEP_TEMPLATES[platform] ?? INSTALL_STEP_TEMPLATES.other;
+
+  return templates.map((step) => ({
+    title: typeof step.title === 'function' ? step.title(title) : step.title,
+    body: step.body(title),
+    icon: step.icon,
+  }));
 }

@@ -2,19 +2,20 @@ import { CONFIG } from '../config.js';
 import Storage from '../lib/storage.js';
 import { getUpcomingPeriods, getWeekAhead } from '../lib/cycle.js';
 import { todayISO, isValidDateISO } from '../lib/dates.js';
+import { getPartnerName } from '../lib/profile.js';
 import { getTipsForPhase } from '../content/tips.js';
 import { $, escapeHtml, htmlList } from './dom.js';
 import { showToast } from './toast.js';
 import { historyPanelsHtml, bindHistoryPanels } from './history.js';
-
-const { name } = CONFIG.app;
+import { personalizationPanelHtml, bindPersonalizationPanel } from './onboarding.js';
 
 /**
  * Copy explaining prediction confidence for the current history.
  * @param {{ level: string, windowDays: number }} confidence
+ * @param {string} name
  * @returns {string}
  */
-function confidenceCopy(confidence) {
+function confidenceCopy(confidence, name) {
   if (confidence.level === 'regular') return `${name}'s cycles are quite regular.`;
   if (confidence.level === 'variable')
     return `${name}'s cycles vary a bit — treat the date as a window.`;
@@ -80,7 +81,8 @@ function weekAheadHtml(week) {
  * @param {() => void} onUpdate
  */
 export function renderDashboard(state, cycles, settings, onUpdate) {
-  const tips = getTipsForPhase(state.phase, state.cycleDay);
+  const name = getPartnerName();
+  const tips = getTipsForPhase(state.phase, state.cycleDay, name);
   const upcoming = getUpcomingPeriods(cycles, settings);
   const week = getWeekAhead(cycles, settings);
   const main = $(CONFIG.ui.selectors.main);
@@ -139,7 +141,7 @@ export function renderDashboard(state, cycles, settings, onUpdate) {
     <section class="predictions-card">
       <h2>Upcoming periods</h2>
       ${nextExpectedHtml}
-      <p class="prediction-basis">${escapeHtml(confidenceCopy(upcoming.confidence))} Based on ${escapeHtml(upcoming.basisLabel)}.</p>
+      <p class="prediction-basis">${escapeHtml(confidenceCopy(upcoming.confidence, name))} Based on ${escapeHtml(upcoming.basisLabel)}.</p>
       ${accuracyHtml(upcoming.accuracy)}
       ${upcomingHtml ? `<p class="prediction-subhead">Then</p>${upcomingHtml}` : ''}
     </section>
@@ -167,6 +169,7 @@ export function renderDashboard(state, cycles, settings, onUpdate) {
       </div>
     </section>
 
+    ${personalizationPanelHtml()}
     ${historyPanelsHtml(cycles)}
 
     <p class="meta">${escapeHtml(metaParts.join(' · '))}</p>
@@ -227,4 +230,5 @@ export function renderDashboard(state, cycles, settings, onUpdate) {
   });
 
   bindHistoryPanels(main, onUpdate);
+  bindPersonalizationPanel(main, onUpdate);
 }
