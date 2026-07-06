@@ -4,6 +4,7 @@ import { getUpcomingPeriods, getWeekAhead } from '../lib/cycle.js';
 import { todayISO, isValidDateISO } from '../lib/dates.js';
 import { getPartnerName } from '../lib/profile.js';
 import { getTipsForPhase } from '../content/tips.js';
+import { getPhaseExplanation, phaseGuideHtml } from '../content/phases.js';
 import { $, escapeHtml, htmlList } from './dom.js';
 import { showToast } from './toast.js';
 import { historyPanelsHtml, bindHistoryPanels } from './history.js';
@@ -45,21 +46,26 @@ function weekAheadHtml(week) {
   if (!week) return '';
 
   const daysHtml = week.days
-    .map(
-      (day) => `
-      <div class="week-day${day.isToday ? ' week-day--today' : ''}" title="${escapeHtml(day.phaseLabel)}">
+    .map((day) => {
+      const explanation = getPhaseExplanation(day.phase);
+      return `
+      <div class="week-day${day.isToday ? ' week-day--today' : ''}" title="${escapeHtml(`${day.phaseLabel}: ${explanation.summary}`)}">
         <span class="week-day__name">${escapeHtml(day.weekday.slice(0, 2))}</span>
         <span class="week-day__dot phase-dot phase-dot--${escapeHtml(day.phase)}"></span>
       </div>
-    `,
-    )
+    `;
+    })
     .join('');
 
   let callout;
   if (week.transition) {
     const t = week.transition;
+    const explanation = getPhaseExplanation(t.phase);
     const when = t.inDays === 1 ? 'tomorrow' : `${t.weekday} (in ${t.inDays} days)`;
-    callout = `<p class="week-callout"><strong>${escapeHtml(t.phaseLabel)}</strong> phase likely starts ${escapeHtml(when)}</p>`;
+    callout = `
+      <p class="week-callout"><strong>${escapeHtml(t.phaseLabel)}</strong> phase likely starts ${escapeHtml(when)}</p>
+      <p class="phase-explainer phase-explainer--inline">${escapeHtml(explanation.summary)}</p>
+    `;
   } else {
     callout = `<p class="week-callout week-callout--calm">No phase change expected this week</p>`;
   }
@@ -69,6 +75,7 @@ function weekAheadHtml(week) {
       <h2>The week ahead</h2>
       <div class="week-strip">${daysHtml}</div>
       ${callout}
+      ${phaseGuideHtml()}
     </section>
   `;
 }
@@ -123,9 +130,12 @@ export function renderDashboard(state, cycles, settings, onUpdate) {
   else metaParts.push(`${CONFIG.defaults.cycleLength}-day default cycle`);
   if (state.learnedPeriod) metaParts.push(`${state.learnedPeriod}-day avg period`);
 
+  const currentPhase = getPhaseExplanation(state.phase);
+
   main.innerHTML = `
     <section class="phase-card">
       <div class="phase-badge ${escapeHtml(state.phase)}">${escapeHtml(state.phaseLabel)} phase</div>
+      <p class="phase-explainer">${escapeHtml(currentPhase.summary)}</p>
       <div class="cycle-day">
         Day ${state.cycleDay}
         <span>of ~${state.cycleLength}</span>
