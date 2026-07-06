@@ -4,7 +4,7 @@ import { getTipTemplates, getTipsForPhase, TIP_TEMPLATES } from '../js/content/t
 describe('tips', () => {
   it('interpolates the partner name into tip copy', () => {
     const tips = getTipsForPhase('period', 1, 'Lucy');
-    expect(tips[0]).toContain("Lucy's favorite snack");
+    expect(tips[0]).toContain("Lucy's favourite snack");
   });
 
   it('keys tip rotation to the cycle day when provided', () => {

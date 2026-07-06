@@ -43,7 +43,7 @@ export const CONFIG = {
     installDismissKey: 'cycle-companion-install-dismissed',
   },
   serviceWorker: {
-    cacheName: 'cycle-companion-v15',
+    cacheName: 'cycle-companion-v16',
   },
   ui: {
     toastDurationMs: 2500,

@@ -19,19 +19,21 @@ export function renderOnboarding(onComplete) {
   main.innerHTML = `
     <div class="onboarding">
       <h2>Let's get started</h2>
-      <p>Who is this for? You'll see cycle phases and partner tips personalized to her.</p>
+      <p>Who is this for? You'll see cycle phases and partner tips personalised to her.</p>
       <label for="partner-name" class="field-label">Her name</label>
-      <input
-        type="text"
-        id="partner-name"
-        class="text-input"
-        value="${escapeHtml(savedName)}"
-        maxlength="40"
-        autocomplete="off"
-        autocapitalize="words"
-        placeholder="e.g. Lucy"
-        required
-      >
+      <div class="text-input-wrap">
+        <input
+          type="text"
+          id="partner-name"
+          class="text-input"
+          value="${escapeHtml(savedName)}"
+          maxlength="40"
+          autocomplete="off"
+          autocapitalize="words"
+          placeholder="e.g. Lucy"
+          required
+        >
+      </div>
       <label for="start-date" class="field-label">When did her last period start?</label>
       <div class="date-input-wrap">
         <input type="date" id="start-date" class="date-input" value="${today}" max="${today}">
@@ -74,16 +76,18 @@ export function renderNameSetup(onComplete) {
       <h2>Who is this for?</h2>
       <p>Add her name so tips and predictions feel personal.</p>
       <label for="partner-name" class="field-label">Her name</label>
-      <input
-        type="text"
-        id="partner-name"
-        class="text-input"
-        maxlength="40"
-        autocomplete="off"
-        autocapitalize="words"
-        placeholder="e.g. Lucy"
-        required
-      >
+      <div class="text-input-wrap">
+        <input
+          type="text"
+          id="partner-name"
+          class="text-input"
+          maxlength="40"
+          autocomplete="off"
+          autocapitalize="words"
+          placeholder="e.g. Lucy"
+          required
+        >
+      </div>
       <button class="btn btn-primary" id="btn-save-name" type="button">Save name</button>
     </div>
   `;
@@ -113,22 +117,24 @@ export function personalizationPanelHtml() {
 
   return `
     <details class="panel panel--personalization">
-      <summary>Personalization</summary>
+      <summary>Personalisation</summary>
       <div class="panel-body">
         <p class="panel-hint">Change how the app addresses your partner across tips and predictions.</p>
         <label for="settings-partner-name" class="field-label">Her name</label>
-        <input
-          type="text"
-          id="settings-partner-name"
-          class="text-input"
-          value="${escapeHtml(name)}"
-          maxlength="40"
-          autocomplete="off"
-          autocapitalize="words"
-          enterkeyhint="done"
-          inputmode="text"
-          placeholder="e.g. Lucy"
-        >
+        <div class="text-input-wrap">
+          <input
+            type="text"
+            id="settings-partner-name"
+            class="text-input"
+            value="${escapeHtml(name)}"
+            maxlength="40"
+            autocomplete="off"
+            autocapitalize="words"
+            enterkeyhint="done"
+            inputmode="text"
+            placeholder="e.g. Lucy"
+          >
+        </div>
         <button type="button" class="btn btn-secondary panel-action" id="btn-save-partner-name">Save name</button>
       </div>
     </details>
