@@ -102,10 +102,19 @@ export function renderDashboard(state, cycles, settings, onUpdate) {
         .join('')}</ul>`
     : '';
 
-  const showEndButton = state.phase === 'period' && !state.latestHasEnd;
-  const endButtonHtml = showEndButton
-    ? '<button class="btn btn-secondary" id="btn-end-today" type="button">Period ended today</button>'
-    : '';
+  const isActivePeriod = state.phase === 'period' && !state.latestHasEnd;
+  const primaryAction = isActivePeriod
+    ? {
+        id: 'btn-log-today',
+        label: 'Period ended today',
+        mode: 'end',
+      }
+    : {
+        id: 'btn-log-today',
+        label: 'Period started today',
+        mode: 'start',
+      };
+  const otherDateLabel = isActivePeriod ? 'When did it end?' : 'When did it start?';
 
   const metaParts = [];
   if (state.learnedCycle) metaParts.push(`${state.learnedCycle}-day avg cycle`);
@@ -143,54 +152,73 @@ export function renderDashboard(state, cycles, settings, onUpdate) {
       <ul>${htmlList(tips.slice(1))}</ul>
     </section>
 
-    <div class="actions">
-      <button class="btn btn-primary" id="btn-log-today" type="button">Period started today</button>
-      ${endButtonHtml}
-      <button class="btn btn-secondary" id="btn-log-past" type="button" aria-expanded="false">Log a different date</button>
-      <div class="past-form" id="past-form" hidden>
-        <label class="sr-only" for="past-date">Period start date</label>
-        <input type="date" id="past-date" class="date-input" value="${today}" max="${today}">
-        <button class="btn btn-primary" id="btn-save-past" type="button">Save</button>
+    <section class="log-card">
+      <p class="log-card__prompt">${isActivePeriod ? 'Still on her period?' : 'Has her period started?'}</p>
+      <div class="actions">
+        <button class="btn btn-primary" id="${primaryAction.id}" type="button" data-log-mode="${primaryAction.mode}">${escapeHtml(primaryAction.label)}</button>
+        <button class="log-card__other" id="btn-log-other" type="button" aria-expanded="false">Not today? Pick a date</button>
+        <div class="log-form" id="log-form" hidden>
+          <label class="log-form__label" for="log-date">${escapeHtml(otherDateLabel)}</label>
+          <div class="log-form__row">
+            <input type="date" id="log-date" class="date-input" value="${today}" max="${today}"${isActivePeriod ? ` min="${escapeHtml(state.lastStart)}"` : ''}>
+            <button class="btn btn-primary" id="btn-save-date" type="button" data-log-mode="${primaryAction.mode}">Save</button>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
 
     ${historyPanelsHtml(cycles)}
 
     <p class="meta">${escapeHtml(metaParts.join(' · '))}</p>
   `;
 
-  $('#btn-log-today')?.addEventListener('click', () => {
-    Storage.saveCycle({ startDate: todayISO() });
+  $('#btn-log-today')?.addEventListener('click', (event) => {
+    const mode = /** @type {HTMLButtonElement} */ (event.currentTarget).dataset.logMode;
+    const today = todayISO();
+    if (mode === 'end') {
+      if (Storage.setPeriodEnd(state.lastStart, today)) {
+        showToast('Period end logged');
+        onUpdate();
+      }
+      return;
+    }
+    Storage.saveCycle({ startDate: today });
     showToast('Period start logged');
     onUpdate();
   });
 
-  $('#btn-end-today')?.addEventListener('click', () => {
-    if (Storage.setPeriodEnd(state.lastStart, todayISO())) {
-      showToast('Period end logged');
-      onUpdate();
-    }
-  });
-
-  const pastToggle = $('#btn-log-past');
-  const pastForm = $('#past-form');
-  pastToggle?.addEventListener('click', () => {
-    const isHidden = pastForm?.hasAttribute('hidden');
+  const otherToggle = $('#btn-log-other');
+  const logForm = $('#log-form');
+  otherToggle?.addEventListener('click', () => {
+    const isHidden = logForm?.hasAttribute('hidden');
     if (isHidden) {
-      pastForm?.removeAttribute('hidden');
-      pastToggle.setAttribute('aria-expanded', 'true');
-      /** @type {HTMLInputElement | null} */ ($('#past-date'))?.focus();
+      logForm?.removeAttribute('hidden');
+      otherToggle.setAttribute('aria-expanded', 'true');
+      /** @type {HTMLInputElement | null} */ ($('#log-date'))?.focus();
     } else {
-      pastForm?.setAttribute('hidden', '');
-      pastToggle.setAttribute('aria-expanded', 'false');
+      logForm?.setAttribute('hidden', '');
+      otherToggle.setAttribute('aria-expanded', 'false');
     }
   });
 
-  $('#btn-save-past')?.addEventListener('click', () => {
-    const input = /** @type {HTMLInputElement | null} */ ($('#past-date'));
+  $('#btn-save-date')?.addEventListener('click', (event) => {
+    const mode = /** @type {HTMLButtonElement} */ (event.currentTarget).dataset.logMode;
+    const input = /** @type {HTMLInputElement | null} */ ($('#log-date'));
     const date = input?.value;
-    if (!date || !isValidDateISO(date) || date > todayISO()) {
+    const today = todayISO();
+    if (!date || !isValidDateISO(date) || date > today) {
       showToast('Pick a valid date (not in the future)');
+      return;
+    }
+    if (mode === 'end') {
+      if (date < state.lastStart) {
+        showToast('End date must be on or after the start date');
+        return;
+      }
+      if (Storage.setPeriodEnd(state.lastStart, date)) {
+        showToast('Period end saved');
+        onUpdate();
+      }
       return;
     }
     Storage.saveCycle({ startDate: date });

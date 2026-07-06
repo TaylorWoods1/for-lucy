@@ -916,20 +916,70 @@ html.access-blocked .app,
   margin-bottom: 0.25rem;
 }
 
-/* Inline past-date form */
-.past-form {
+/* Period logging */
+.log-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow);
+  width: 100%;
+  min-width: 0;
+}
+
+.log-card__prompt {
+  font-size: 0.9375rem;
+  color: var(--text-muted);
+  margin-bottom: 0.875rem;
+  text-align: center;
+}
+
+.log-card__other {
+  display: block;
+  width: 100%;
+  padding: 0.5rem;
+  border: none;
+  background: none;
+  color: var(--rose-dark);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.log-card__other:hover {
+  color: var(--rose);
+}
+
+.log-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+  padding-top: 0.25rem;
+}
+
+.log-form__label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.log-form__row {
   display: flex;
   gap: 0.5rem;
   width: 100%;
   min-width: 0;
 }
 
-.past-form .date-input {
+.log-form__row .date-input {
   flex: 1;
   min-width: 0;
 }
 
-.past-form .btn {
+.log-form__row .btn {
   width: auto;
   padding: 0.85rem 1.25rem;
 }
