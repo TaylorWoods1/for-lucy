@@ -1,7 +1,8 @@
 import Storage from './lib/storage.js';
 import { getCycleState } from './lib/cycle.js';
 import { canUseApp } from './lib/platform.js';
-import { renderOnboarding } from './ui/onboarding.js';
+import { applyBranding, isPartnerNameSet } from './lib/profile.js';
+import { renderOnboarding, renderNameSetup } from './ui/onboarding.js';
 import { renderDashboard } from './ui/dashboard.js';
 import { initInstallPrompt } from './ui/install-prompt.js';
 
@@ -9,6 +10,11 @@ import { initInstallPrompt } from './ui/install-prompt.js';
 function render() {
   const cycles = Storage.getCycles();
   const settings = Storage.getSettings();
+
+  if (!isPartnerNameSet() && cycles.length) {
+    renderNameSetup(render);
+    return;
+  }
 
   if (!cycles.length) {
     renderOnboarding(render);
@@ -20,6 +26,7 @@ function render() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  applyBranding();
   initInstallPrompt();
   if (canUseApp()) {
     render();
