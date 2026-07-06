@@ -7,7 +7,12 @@ A private, mobile-first PWA to track cycle phases and get supportive partner tip
 ## Features
 
 - Cycle phase dashboard with progress and partner tips
-- Predicted upcoming period dates (learns average cycle length over time)
+- Self-learning predictions — recency-weighted cycle length, a ± day confidence window that narrows as cycles are logged, and a self-reported accuracy line
+- Week-ahead outlook with the next phase transition called out
+- Period end logging (learns average period length over time)
+- Daily partner tips keyed to the cycle day, led by a single "today's focus"
+- History panel to remove mislogged entries; predictions recalculate instantly
+- Backup export/import (JSON) and full data delete — all still local-only
 - GMT+10 calendar dates via `Australia/Brisbane`
 - Local-only storage — nothing leaves the device
 - Installable PWA with offline shell

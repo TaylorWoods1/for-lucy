@@ -67,12 +67,18 @@ const TIPS = {
 
 /**
  * Return a rotating set of partner tips for the current phase.
+ * When a cycle day is provided the rotation is keyed to where she is in the
+ * cycle (deterministic per cycle day) rather than the global calendar.
  * @param {string} phase
+ * @param {number} [cycleDay]
  * @returns {string[]}
  */
-export function getTipsForPhase(phase) {
+export function getTipsForPhase(phase, cycleDay) {
   const sets = TIPS[phase] || TIPS.luteal;
-  const index = Math.floor(Date.now() / 86_400_000) % sets.length;
+  const index =
+    typeof cycleDay === 'number' && cycleDay >= 1
+      ? (cycleDay - 1) % sets.length
+      : Math.floor(Date.now() / 86_400_000) % sets.length;
   return sets[index];
 }
 
