@@ -45,6 +45,21 @@ export function daysBetween(start, end) {
 }
 
 /**
+ * Add calendar days to an ISO date string without timezone drift.
+ * @param {string} iso
+ * @param {number} days
+ * @returns {string}
+ */
+export function addDaysISO(iso, days) {
+  const date = parseDateISO(iso);
+  date.setDate(date.getDate() + days);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
  * Human-readable date for UI, e.g. "Thu, 2 July".
  * @param {string} iso
  * @returns {string}
@@ -54,6 +69,18 @@ export function formatDisplayDate(iso) {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
+    timeZone: CONFIG.timezone,
+  }).format(parseDateISO(iso));
+}
+
+/**
+ * Short weekday label for UI, e.g. "Thu".
+ * @param {string} iso
+ * @returns {string}
+ */
+export function formatWeekday(iso) {
+  return new Intl.DateTimeFormat('en-AU', {
+    weekday: 'short',
     timeZone: CONFIG.timezone,
   }).format(parseDateISO(iso));
 }

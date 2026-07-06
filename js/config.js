@@ -23,16 +23,31 @@ export const CONFIG = {
     cycleLength: 28,
     periodLength: 5,
   },
+  /** Self-learning prediction parameters. */
+  prediction: {
+    /** Weight multiplier per step back in time — recent cycles matter more. */
+    recencyFactor: 0.8,
+    /** Std deviation (days) at or below which cycles count as regular. */
+    regularStdDevDays: 1.5,
+    /** Prediction window bounds (± days around the expected date). */
+    minWindowDays: 1,
+    maxWindowDays: 5,
+    /** Window shown while the app is still learning (fewer than 3 intervals). */
+    learningWindowDays: 3,
+    /** Minimum logged intervals before confidence is claimed. */
+    minIntervalsForConfidence: 3,
+  },
   storage: {
     key: 'cycle-companion-data',
     installDismissKey: 'for-lucy-install-dismissed',
   },
   serviceWorker: {
-    cacheName: 'cycle-companion-v12',
+    cacheName: 'cycle-companion-v13',
   },
   ui: {
     toastDurationMs: 2500,
     upcomingPeriodCount: 3,
+    weekAheadDays: 7,
     installPrompt: {
       swipeThresholdPx: 48,
     },
@@ -63,6 +78,7 @@ export const CACHE_ASSETS = [
   './js/ui/toast.js',
   './js/ui/onboarding.js',
   './js/ui/dashboard.js',
+  './js/ui/history.js',
   './js/ui/install-prompt.js',
   './js/lib/platform.js',
   './icons/icon.svg',

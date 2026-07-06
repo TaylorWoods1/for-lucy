@@ -48,4 +48,59 @@ describe('storage', () => {
     Storage.clearAll();
     expect(Storage.getCycles()).toEqual([]);
   });
+
+  it('deletes a cycle by start date', () => {
+    Storage.saveCycle({ startDate: '2026-06-01' });
+    Storage.saveCycle({ startDate: '2026-07-01' });
+    expect(Storage.deleteCycle('2026-06-01')).toBe(true);
+    expect(Storage.getCycles()).toEqual([{ startDate: '2026-07-01' }]);
+    expect(Storage.deleteCycle('2026-06-01')).toBe(false);
+  });
+
+  it('records a period end date on an existing cycle', () => {
+    Storage.saveCycle({ startDate: '2026-06-01' });
+    expect(Storage.setPeriodEnd('2026-06-01', '2026-06-05')).toBe(true);
+    expect(Storage.getCycles()).toEqual([{ startDate: '2026-06-01', endDate: '2026-06-05' }]);
+  });
+
+  it('rejects invalid period end dates', () => {
+    Storage.saveCycle({ startDate: '2026-06-10' });
+    expect(Storage.setPeriodEnd('2026-06-10', '2026-06-01')).toBe(false);
+    expect(Storage.setPeriodEnd('2026-06-10', 'garbage')).toBe(false);
+    expect(Storage.setPeriodEnd('2026-01-01', '2026-01-05')).toBe(false);
+    expect(Storage.getCycles()).toEqual([{ startDate: '2026-06-10' }]);
+  });
+
+  it('round-trips data through export and import', () => {
+    Storage.saveCycle({ startDate: '2026-06-01' });
+    Storage.setPeriodEnd('2026-06-01', '2026-06-05');
+    Storage.saveSettings({ defaultCycleLength: 30 });
+    const backup = Storage.exportData();
+
+    Storage.clearAll();
+    expect(Storage.importData(backup)).toBe(true);
+    expect(Storage.getCycles()).toEqual([{ startDate: '2026-06-01', endDate: '2026-06-05' }]);
+    expect(Storage.getSettings().defaultCycleLength).toBe(30);
+  });
+
+  it('rejects malformed backups without touching stored data', () => {
+    Storage.saveCycle({ startDate: '2026-06-01' });
+    expect(Storage.importData('not json')).toBe(false);
+    expect(Storage.importData('{"cycles":"nope"}')).toBe(false);
+    expect(Storage.importData('{"cycles":[{"startDate":"junk"}]}')).toBe(false);
+    expect(
+      Storage.importData('{"cycles":[{"startDate":"2026-06-10","endDate":"2026-06-01"}]}'),
+    ).toBe(false);
+    expect(Storage.getCycles()).toEqual([{ startDate: '2026-06-01' }]);
+  });
+
+  it('sanitizes unknown fields and bad settings on import', () => {
+    const raw = JSON.stringify({
+      cycles: [{ startDate: '2026-06-01', evil: '<script>' }],
+      settings: { defaultCycleLength: -3, defaultPeriodLength: 6, extra: true },
+    });
+    expect(Storage.importData(raw)).toBe(true);
+    expect(Storage.getCycles()).toEqual([{ startDate: '2026-06-01' }]);
+    expect(Storage.getSettings()).toEqual({ defaultCycleLength: 28, defaultPeriodLength: 6 });
+  });
 });
