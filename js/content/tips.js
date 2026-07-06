@@ -1,7 +1,7 @@
 const TIP_TEMPLATES = {
   period: [
     [
-      "Comfort over productivity — a heating pad, {{name}}'s favorite snack, or taking something off her plate goes a long way.",
+      "Comfort over productivity — a heating pad, {{name}}'s favourite snack, or taking something off her plate goes a long way.",
       'Low energy is normal for {{name}} right now. Offer to handle dinner or errands without her having to ask.',
       'Check in gently: "How are you feeling?" beats "You seem off today."',
     ],
@@ -44,7 +44,7 @@ const TIP_TEMPLATES = {
     [
       '{{name}} might feel more inward. Give her space without disappearing.',
       'Help with logistics — groceries, kids, chores — before she has to ask.',
-      'A small surprise for {{name}} — flowers, her favorite treat — can brighten a tougher day.',
+      'A small surprise for {{name}} — flowers, her favourite treat — can brighten a tougher day.',
     ],
   ],
   pms: [
