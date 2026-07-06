@@ -1,38 +1,110 @@
 import { CONFIG } from '../config.js';
 import Storage from '../lib/storage.js';
-import { getUpcomingPeriods } from '../lib/cycle.js';
+import { getUpcomingPeriods, getWeekAhead } from '../lib/cycle.js';
 import { todayISO, isValidDateISO } from '../lib/dates.js';
 import { getTipsForPhase } from '../content/tips.js';
 import { $, escapeHtml, htmlList } from './dom.js';
 import { showToast } from './toast.js';
+import { historyPanelsHtml, bindHistoryPanels } from './history.js';
 
 const { name } = CONFIG.app;
 
 /**
- * Render the main dashboard with phase, predictions, and tips.
+ * Copy explaining prediction confidence for the current history.
+ * @param {{ level: string, windowDays: number }} confidence
+ * @returns {string}
+ */
+function confidenceCopy(confidence) {
+  if (confidence.level === 'regular') return `${name}'s cycles are quite regular.`;
+  if (confidence.level === 'variable')
+    return `${name}'s cycles vary a bit — treat the date as a window.`;
+  return 'Still learning her rhythm — the window narrows with every logged cycle.';
+}
+
+/**
+ * Self-reported accuracy line, shown once enough history exists.
+ * @param {{ count: number, withinDays: number } | null} accuracy
+ * @returns {string}
+ */
+function accuracyHtml(accuracy) {
+  if (!accuracy) return '';
+  const copy =
+    accuracy.withinDays === 0
+      ? `Last ${accuracy.count} predictions were spot on.`
+      : `Last ${accuracy.count} predictions landed within ±${accuracy.withinDays} day${accuracy.withinDays === 1 ? '' : 's'}.`;
+  return `<p class="prediction-accuracy">${escapeHtml(copy)}</p>`;
+}
+
+/**
+ * Seven-day phase outlook strip with transition callout.
+ * @param {ReturnType<typeof getWeekAhead>} week
+ * @returns {string}
+ */
+function weekAheadHtml(week) {
+  if (!week) return '';
+
+  const daysHtml = week.days
+    .map(
+      (day) => `
+      <div class="week-day${day.isToday ? ' week-day--today' : ''}" title="${escapeHtml(day.phaseLabel)}">
+        <span class="week-day__name">${escapeHtml(day.weekday.slice(0, 2))}</span>
+        <span class="week-day__dot phase-dot phase-dot--${escapeHtml(day.phase)}"></span>
+      </div>
+    `,
+    )
+    .join('');
+
+  let callout;
+  if (week.transition) {
+    const t = week.transition;
+    const when = t.inDays === 1 ? 'tomorrow' : `${t.weekday} (in ${t.inDays} days)`;
+    callout = `<p class="week-callout"><strong>${escapeHtml(t.phaseLabel)}</strong> phase likely starts ${escapeHtml(when)}</p>`;
+  } else {
+    callout = `<p class="week-callout week-callout--calm">No phase change expected this week</p>`;
+  }
+
+  return `
+    <section class="week-card">
+      <h2>The week ahead</h2>
+      <div class="week-strip">${daysHtml}</div>
+      ${callout}
+    </section>
+  `;
+}
+
+/**
+ * Render the main dashboard with phase, predictions, outlook, and tips.
  * @param {object} state
- * @param {Array<{ startDate: string }>} cycles
+ * @param {Array<{ startDate: string, endDate?: string }>} cycles
  * @param {{ defaultCycleLength: number, defaultPeriodLength: number }} settings
  * @param {() => void} onUpdate
  */
 export function renderDashboard(state, cycles, settings, onUpdate) {
-  const tips = getTipsForPhase(state.phase);
+  const tips = getTipsForPhase(state.phase, state.cycleDay);
   const upcoming = getUpcomingPeriods(cycles, settings);
+  const week = getWeekAhead(cycles, settings);
   const main = $(CONFIG.ui.selectors.main);
   if (!main) return;
+
+  const today = todayISO();
+  const windowDays = upcoming.confidence.windowDays;
+  const rangeChip = `<span class="range-chip">&plusmn; ${windowDays} day${windowDays === 1 ? '' : 's'}</span>`;
 
   const countdownHtml = state.isOverdue
     ? `<span class="overdue">${escapeHtml(name)}'s period may start <strong>any day now</strong></span>`
     : `About <strong>${state.daysUntil}</strong> day${state.daysUntil === 1 ? '' : 's'} until ${escapeHtml(name)}'s next period`;
 
-  const nextExpectedHtml = upcoming.isOverdue
-    ? `<p class="prediction-primary prediction-primary--overdue">Next expected: <strong>${escapeHtml(upcoming.next.label)}</strong></p>`
-    : `<p class="prediction-primary">Next expected: <strong>${escapeHtml(upcoming.next.label)}</strong></p>`;
+  const nextExpectedHtml = `<p class="prediction-primary${upcoming.isOverdue ? ' prediction-primary--overdue' : ''}">Next expected: <strong>${escapeHtml(upcoming.next.label)}</strong> ${rangeChip}</p>`;
 
   const upcomingHtml = upcoming.upcoming.length
     ? `<ul class="prediction-list">${upcoming.upcoming
         .map((p) => `<li><span>${escapeHtml(p.label)}</span><span>${p.daysUntil} days</span></li>`)
         .join('')}</ul>`
+    : '';
+
+  const showEndButton = state.phase === 'period' && !state.latestHasEnd;
+  const endButtonHtml = showEndButton
+    ? '<button class="btn btn-secondary" id="btn-end-today" type="button">Period ended today</button>'
     : '';
 
   const metaParts = [];
@@ -58,19 +130,32 @@ export function renderDashboard(state, cycles, settings, onUpdate) {
     <section class="predictions-card">
       <h2>Upcoming periods</h2>
       ${nextExpectedHtml}
-      <p class="prediction-basis">Based on ${escapeHtml(upcoming.basisLabel)} · updates as you log more starts</p>
+      <p class="prediction-basis">${escapeHtml(confidenceCopy(upcoming.confidence))} Based on ${escapeHtml(upcoming.basisLabel)}.</p>
+      ${accuracyHtml(upcoming.accuracy)}
       ${upcomingHtml ? `<p class="prediction-subhead">Then</p>${upcomingHtml}` : ''}
     </section>
 
+    ${weekAheadHtml(week)}
+
     <section class="tips-card">
       <h2>How to show up for ${escapeHtml(name)} today</h2>
-      <ul>${htmlList(tips)}</ul>
+      <p class="tip-focus"><span class="tip-focus__label">Today's focus</span>${escapeHtml(tips[0])}</p>
+      <ul>${htmlList(tips.slice(1))}</ul>
     </section>
 
     <div class="actions">
       <button class="btn btn-primary" id="btn-log-today" type="button">Period started today</button>
-      <button class="btn btn-secondary" id="btn-log-past" type="button">Log a different date</button>
+      ${endButtonHtml}
+      <button class="btn btn-secondary" id="btn-log-past" type="button" aria-expanded="false">Log a different date</button>
+      <div class="past-form" id="past-form" hidden>
+        <label class="sr-only" for="past-date">Period start date</label>
+        <input type="date" id="past-date" class="date-input" value="${today}" max="${today}">
+        <button class="btn btn-primary" id="btn-save-past" type="button">Save</button>
+      </div>
     </div>
+
+    ${historyPanelsHtml(cycles)}
+
     <p class="meta">${escapeHtml(metaParts.join(' · '))}</p>
   `;
 
@@ -80,11 +165,38 @@ export function renderDashboard(state, cycles, settings, onUpdate) {
     onUpdate();
   });
 
-  $('#btn-log-past')?.addEventListener('click', () => {
-    const date = prompt('Enter period start date (YYYY-MM-DD):', todayISO());
-    if (!date || !isValidDateISO(date)) return;
+  $('#btn-end-today')?.addEventListener('click', () => {
+    if (Storage.setPeriodEnd(state.lastStart, todayISO())) {
+      showToast('Period end logged');
+      onUpdate();
+    }
+  });
+
+  const pastToggle = $('#btn-log-past');
+  const pastForm = $('#past-form');
+  pastToggle?.addEventListener('click', () => {
+    const isHidden = pastForm?.hasAttribute('hidden');
+    if (isHidden) {
+      pastForm?.removeAttribute('hidden');
+      pastToggle.setAttribute('aria-expanded', 'true');
+      /** @type {HTMLInputElement | null} */ ($('#past-date'))?.focus();
+    } else {
+      pastForm?.setAttribute('hidden', '');
+      pastToggle.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  $('#btn-save-past')?.addEventListener('click', () => {
+    const input = /** @type {HTMLInputElement | null} */ ($('#past-date'));
+    const date = input?.value;
+    if (!date || !isValidDateISO(date) || date > todayISO()) {
+      showToast('Pick a valid date (not in the future)');
+      return;
+    }
     Storage.saveCycle({ startDate: date });
     showToast('Period start saved');
     onUpdate();
   });
+
+  bindHistoryPanels(main, onUpdate);
 }

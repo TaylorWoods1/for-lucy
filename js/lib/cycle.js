@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { daysBetween, formatDateISO, formatDisplayDate, parseDateISO, todayISO } from './dates.js';
+import { addDaysISO, daysBetween, formatDisplayDate, formatWeekday, todayISO } from './dates.js';
 
 /** @typedef {'period' | 'follicular' | 'ovulation' | 'luteal' | 'pms'} Phase */
 
@@ -13,18 +13,105 @@ export const PHASE_LABELS = {
 };
 
 /**
- * Compute average days between logged period starts.
+ * Days between consecutive logged period starts, oldest first.
  * @param {Array<{ startDate: string }>} cycles
- * @returns {number | null}
+ * @returns {number[]}
  */
-export function averageCycleLength(cycles) {
-  if (cycles.length < 2) return null;
+export function getIntervals(cycles) {
   const sorted = [...cycles].sort((a, b) => a.startDate.localeCompare(b.startDate));
   const intervals = [];
   for (let i = 1; i < sorted.length; i += 1) {
     intervals.push(daysBetween(sorted[i - 1].startDate, sorted[i].startDate));
   }
-  return Math.round(intervals.reduce((a, b) => a + b, 0) / intervals.length);
+  return intervals;
+}
+
+/**
+ * Recency-weighted mean — recent values count more than old ones.
+ * @param {number[]} values oldest first
+ * @param {number} [factor] weight multiplier per step back in time
+ * @returns {number | null} unrounded weighted mean
+ */
+export function weightedMean(values, factor = CONFIG.prediction.recencyFactor) {
+  if (!values.length) return null;
+  let weightSum = 0;
+  let total = 0;
+  for (let i = 0; i < values.length; i += 1) {
+    const weight = factor ** (values.length - 1 - i);
+    weightSum += weight;
+    total += values[i] * weight;
+  }
+  return total / weightSum;
+}
+
+/**
+ * Learned statistics about the logged cycle history.
+ * @param {Array<{ startDate: string }>} cycles
+ * @returns {{ count: number, mean: number, weighted: number, stdDev: number } | null}
+ */
+export function getCycleStats(cycles) {
+  const intervals = getIntervals(cycles);
+  if (!intervals.length) return null;
+  const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+  const variance = intervals.reduce((sum, x) => sum + (x - mean) ** 2, 0) / intervals.length;
+  return {
+    count: intervals.length,
+    mean: Math.round(mean),
+    weighted: Math.round(weightedMean(intervals)),
+    stdDev: Math.round(Math.sqrt(variance) * 10) / 10,
+  };
+}
+
+/**
+ * Compute average days between logged period starts.
+ * @param {Array<{ startDate: string }>} cycles
+ * @returns {number | null}
+ */
+export function averageCycleLength(cycles) {
+  const stats = getCycleStats(cycles);
+  return stats ? stats.mean : null;
+}
+
+/** @typedef {'learning' | 'regular' | 'variable'} ConfidenceLevel */
+
+/**
+ * How confident predictions are, expressed as a ± day window.
+ * @param {ReturnType<typeof getCycleStats>} stats
+ * @returns {{ level: ConfidenceLevel, windowDays: number }}
+ */
+export function getConfidence(stats) {
+  const p = CONFIG.prediction;
+  if (!stats) {
+    return { level: 'learning', windowDays: p.learningWindowDays };
+  }
+  const spread = Math.round(stats.stdDev);
+  if (stats.count < p.minIntervalsForConfidence) {
+    return { level: 'learning', windowDays: Math.max(2, spread) };
+  }
+  if (stats.stdDev <= p.regularStdDevDays) {
+    return { level: 'regular', windowDays: Math.max(p.minWindowDays, spread) };
+  }
+  return { level: 'variable', windowDays: Math.min(p.maxWindowDays, Math.max(2, spread)) };
+}
+
+/**
+ * How accurate recent predictions would have been, computed retroactively:
+ * each logged interval is compared against the weighted average of the
+ * intervals that came before it.
+ * @param {Array<{ startDate: string }>} cycles
+ * @param {number} [recent=3] number of most recent comparisons to report
+ * @returns {{ count: number, withinDays: number } | null}
+ */
+export function getPredictionAccuracy(cycles, recent = 3) {
+  const intervals = getIntervals(cycles);
+  const errors = [];
+  for (let i = 1; i < intervals.length; i += 1) {
+    const predicted = Math.round(weightedMean(intervals.slice(0, i)));
+    errors.push(Math.abs(intervals[i] - predicted));
+  }
+  if (errors.length < 2) return null;
+  const recentErrors = errors.slice(-recent);
+  return { count: recentErrors.length, withinDays: Math.max(...recentErrors) };
 }
 
 /**
@@ -74,10 +161,12 @@ export function getCycleState(cycles, settings, todayIso = todayISO()) {
   }
 
   const sorted = [...cycles].sort((a, b) => b.startDate.localeCompare(a.startDate));
-  const lastStart = sorted[0].startDate;
+  const latest = sorted[0];
+  const lastStart = latest.startDate;
   const cycleDay = daysBetween(lastStart, todayIso) + 1;
 
-  const learnedCycle = averageCycleLength(cycles);
+  const stats = getCycleStats(cycles);
+  const learnedCycle = stats ? stats.weighted : null;
   const cycleLength = learnedCycle || settings.defaultCycleLength;
 
   const learnedPeriod = averagePeriodLength(cycles);
@@ -86,9 +175,6 @@ export function getCycleState(cycles, settings, todayIso = todayISO()) {
   const daysUntil = cycleLength - cycleDay;
   const phase = getPhase(Math.min(cycleDay, cycleLength), cycleLength, periodLength);
   const progress = Math.min(100, Math.max(0, (cycleDay / cycleLength) * 100));
-
-  const nextPeriodDate = parseDateISO(lastStart);
-  nextPeriodDate.setDate(nextPeriodDate.getDate() + cycleLength);
 
   return {
     hasData: true,
@@ -101,9 +187,12 @@ export function getCycleState(cycles, settings, todayIso = todayISO()) {
     isOverdue: cycleDay > cycleLength,
     progress,
     lastStart,
-    nextPeriodDate: formatDateISO(nextPeriodDate),
+    latestHasEnd: Boolean(latest.endDate),
+    nextPeriodDate: addDaysISO(lastStart, cycleLength),
     learnedCycle,
     learnedPeriod,
+    stats,
+    confidence: getConfidence(stats),
   };
 }
 
@@ -123,28 +212,26 @@ export function getUpcomingPeriods(
 ) {
   const sorted = [...cycles].sort((a, b) => b.startDate.localeCompare(a.startDate));
   const lastStart = sorted[0].startDate;
-  const learnedCycle = averageCycleLength(cycles);
+  const stats = getCycleStats(cycles);
+  const learnedCycle = stats ? stats.weighted : null;
   const cycleLength = learnedCycle || settings.defaultCycleLength;
+  const confidence = getConfidence(stats);
 
-  let cursor = parseDateISO(lastStart);
-  cursor.setDate(cursor.getDate() + cycleLength);
-
-  const today = parseDateISO(todayIso);
+  let cursor = addDaysISO(lastStart, cycleLength);
   let guard = 0;
-  while (cursor < today && guard < 24) {
-    cursor.setDate(cursor.getDate() + cycleLength);
+  while (cursor < todayIso && guard < 24) {
+    cursor = addDaysISO(cursor, cycleLength);
     guard += 1;
   }
 
   const predictions = [];
   for (let i = 0; i < count; i += 1) {
-    const iso = formatDateISO(cursor);
     predictions.push({
-      date: iso,
-      label: formatDisplayDate(iso),
-      daysUntil: daysBetween(todayIso, iso),
+      date: cursor,
+      label: formatDisplayDate(cursor),
+      daysUntil: daysBetween(todayIso, cursor),
     });
-    cursor.setDate(cursor.getDate() + cycleLength);
+    cursor = addDaysISO(cursor, cycleLength);
   }
 
   return {
@@ -152,8 +239,59 @@ export function getUpcomingPeriods(
     upcoming: predictions.slice(1),
     cycleLength,
     basisLabel: learnedCycle
-      ? `${learnedCycle}-day average`
+      ? `${learnedCycle}-day recent average`
       : `${CONFIG.defaults.cycleLength}-day default`,
     isOverdue: daysBetween(lastStart, todayIso) + 1 > cycleLength,
+    confidence,
+    accuracy: getPredictionAccuracy(cycles),
   };
+}
+
+/**
+ * Seven-day phase outlook with the first upcoming phase transition.
+ * @param {Array<{ startDate: string, endDate?: string }>} cycles
+ * @param {{ defaultCycleLength: number, defaultPeriodLength: number }} settings
+ * @param {string} [todayIso]
+ * @returns {{ days: Array<object>, transition: object | null } | null}
+ */
+export function getWeekAhead(cycles, settings, todayIso = todayISO()) {
+  if (!cycles.length) return null;
+
+  const sorted = [...cycles].sort((a, b) => b.startDate.localeCompare(a.startDate));
+  const lastStart = sorted[0].startDate;
+  const stats = getCycleStats(cycles);
+  const cycleLength = (stats ? stats.weighted : null) || settings.defaultCycleLength;
+  const periodLength = averagePeriodLength(cycles) || settings.defaultPeriodLength;
+
+  const days = [];
+  for (let i = 0; i < CONFIG.ui.weekAheadDays; i += 1) {
+    const iso = addDaysISO(todayIso, i);
+    const cycleDay = daysBetween(lastStart, iso) + 1;
+    // Project future days past the expected start onto the next cycle.
+    const effectiveDay = ((cycleDay - 1) % cycleLength) + 1;
+    const phase = getPhase(effectiveDay, cycleLength, periodLength);
+    days.push({
+      date: iso,
+      weekday: formatWeekday(iso),
+      phase,
+      phaseLabel: PHASE_LABELS[phase],
+      isToday: i === 0,
+    });
+  }
+
+  let transition = null;
+  for (let i = 1; i < days.length; i += 1) {
+    if (days[i].phase !== days[0].phase) {
+      transition = {
+        phase: days[i].phase,
+        phaseLabel: days[i].phaseLabel,
+        date: days[i].date,
+        weekday: days[i].weekday,
+        inDays: i,
+      };
+      break;
+    }
+  }
+
+  return { days, transition };
 }
