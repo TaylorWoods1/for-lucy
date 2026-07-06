@@ -43,7 +43,7 @@ export const CONFIG = {
     installDismissKey: 'cycle-companion-install-dismissed',
   },
   serviceWorker: {
-    cacheName: 'cycle-companion-v14',
+    cacheName: 'cycle-companion-v15',
   },
   ui: {
     toastDurationMs: 2500,
@@ -75,6 +75,7 @@ export const CACHE_ASSETS = [
   './js/lib/cycle.js',
   './js/lib/storage.js',
   './js/content/tips.js',
+  './js/content/phases.js',
   './js/ui/dom.js',
   './js/ui/toast.js',
   './js/ui/onboarding.js',
