@@ -32,13 +32,15 @@ describe('storage', () => {
 
   it('returns default settings', () => {
     expect(Storage.getSettings()).toEqual({
+      partnerName: '',
       defaultCycleLength: 28,
       defaultPeriodLength: 5,
     });
   });
 
   it('merges setting updates', () => {
-    Storage.saveSettings({ defaultCycleLength: 30 });
+    Storage.saveSettings({ partnerName: 'Lucy', defaultCycleLength: 30 });
+    expect(Storage.getSettings().partnerName).toBe('Lucy');
     expect(Storage.getSettings().defaultCycleLength).toBe(30);
     expect(Storage.getSettings().defaultPeriodLength).toBe(5);
   });
@@ -74,13 +76,17 @@ describe('storage', () => {
   it('round-trips data through export and import', () => {
     Storage.saveCycle({ startDate: '2026-06-01' });
     Storage.setPeriodEnd('2026-06-01', '2026-06-05');
-    Storage.saveSettings({ defaultCycleLength: 30 });
+    Storage.saveSettings({ partnerName: 'Lucy', defaultCycleLength: 30 });
     const backup = Storage.exportData();
 
     Storage.clearAll();
     expect(Storage.importData(backup)).toBe(true);
     expect(Storage.getCycles()).toEqual([{ startDate: '2026-06-01', endDate: '2026-06-05' }]);
-    expect(Storage.getSettings().defaultCycleLength).toBe(30);
+    expect(Storage.getSettings()).toEqual({
+      partnerName: 'Lucy',
+      defaultCycleLength: 30,
+      defaultPeriodLength: 5,
+    });
   });
 
   it('rejects malformed backups without touching stored data', () => {
@@ -101,6 +107,10 @@ describe('storage', () => {
     });
     expect(Storage.importData(raw)).toBe(true);
     expect(Storage.getCycles()).toEqual([{ startDate: '2026-06-01' }]);
-    expect(Storage.getSettings()).toEqual({ defaultCycleLength: 28, defaultPeriodLength: 6 });
+    expect(Storage.getSettings()).toEqual({
+      partnerName: '',
+      defaultCycleLength: 28,
+      defaultPeriodLength: 6,
+    });
   });
 });

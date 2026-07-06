@@ -3,6 +3,7 @@ import { CONFIG } from '../config.js';
 const DEFAULT_DATA = {
   cycles: [],
   settings: {
+    partnerName: '',
     defaultCycleLength: CONFIG.defaults.cycleLength,
     defaultPeriodLength: CONFIG.defaults.periodLength,
   },
@@ -85,12 +86,12 @@ const Storage = {
     return true;
   },
 
-  /** @returns {{ defaultCycleLength: number, defaultPeriodLength: number }} */
+  /** @returns {{ partnerName: string, defaultCycleLength: number, defaultPeriodLength: number }} */
   getSettings() {
     return this._load().settings;
   },
 
-  /** @param {Partial<{ defaultCycleLength: number, defaultPeriodLength: number }>} settings */
+  /** @param {Partial<{ partnerName: string, defaultCycleLength: number, defaultPeriodLength: number }>} settings */
   saveSettings(settings) {
     const data = this._load();
     data.settings = { ...data.settings, ...settings };
@@ -140,7 +141,10 @@ const Storage = {
 
     const settings = { ...DEFAULT_DATA.settings };
     if (parsed.settings && typeof parsed.settings === 'object') {
-      for (const key of Object.keys(settings)) {
+      if (typeof parsed.settings.partnerName === 'string') {
+        settings.partnerName = parsed.settings.partnerName.trim().slice(0, 40);
+      }
+      for (const key of ['defaultCycleLength', 'defaultPeriodLength']) {
         const value = parsed.settings[key];
         if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
           settings[key] = Math.round(value);

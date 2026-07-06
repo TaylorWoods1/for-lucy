@@ -73,7 +73,7 @@ export function bindHistoryPanels(root, onUpdate) {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `for-lucy-backup-${todayISO()}.json`;
+    anchor.download = `cycle-companion-backup-${todayISO()}.json`;
     anchor.click();
     URL.revokeObjectURL(url);
     showToast('Backup downloaded');
