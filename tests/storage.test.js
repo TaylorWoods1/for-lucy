@@ -59,6 +59,27 @@ describe('storage', () => {
     expect(Storage.deleteCycle('2026-06-01')).toBe(false);
   });
 
+  it('updates a cycle start date while preserving end date', () => {
+    Storage.saveCycle({ startDate: '2026-06-01' });
+    Storage.setPeriodEnd('2026-06-01', '2026-06-05');
+    expect(Storage.updateCycleStart('2026-06-01', '2026-06-02')).toBe(true);
+    expect(Storage.getCycles()).toEqual([{ startDate: '2026-06-02', endDate: '2026-06-05' }]);
+  });
+
+  it('rejects invalid cycle start date updates', () => {
+    Storage.saveCycle({ startDate: '2026-06-01' });
+    Storage.saveCycle({ startDate: '2026-07-01' });
+    Storage.setPeriodEnd('2026-06-01', '2026-06-05');
+    expect(Storage.updateCycleStart('2026-06-01', '2026-07-01')).toBe(false);
+    expect(Storage.updateCycleStart('2026-06-01', '2026-06-10')).toBe(false);
+    expect(Storage.updateCycleStart('2026-01-01', '2026-06-02')).toBe(false);
+    expect(Storage.updateCycleStart('2026-06-01', '2026-06-01')).toBe(true);
+    expect(Storage.getCycles()).toEqual([
+      { startDate: '2026-06-01', endDate: '2026-06-05' },
+      { startDate: '2026-07-01' },
+    ]);
+  });
+
   it('records a period end date on an existing cycle', () => {
     Storage.saveCycle({ startDate: '2026-06-01' });
     expect(Storage.setPeriodEnd('2026-06-01', '2026-06-05')).toBe(true);

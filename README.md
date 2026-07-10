@@ -11,6 +11,7 @@ A private, mobile-first PWA to track cycle phases and get supportive partner tip
 - Week-ahead outlook with the next phase transition called out
 - Period end logging (learns average period length over time)
 - Daily partner tips keyed to the cycle day, led by a single "today's focus"
+- Prominent "Wrong date? Change it" on the home screen, plus change-date in History — fix a mislogged start without deleting and re-adding
 - History panel to remove mislogged entries; predictions recalculate instantly
 - Backup export/import (JSON) and full data delete — all still local-only
 - GMT+10 calendar dates via `Australia/Brisbane`

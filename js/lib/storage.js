@@ -71,6 +71,28 @@ const Storage = {
   },
 
   /**
+   * Change the start date on an existing logged cycle.
+   * @param {string} oldStartDate
+   * @param {string} newStartDate
+   * @returns {boolean} true when the entry was updated
+   */
+  updateCycleStart(oldStartDate, newStartDate) {
+    if (!isIsoDate(oldStartDate) || !isIsoDate(newStartDate)) return false;
+    if (oldStartDate === newStartDate) return true;
+
+    const data = this._load();
+    const cycle = data.cycles.find((c) => c.startDate === oldStartDate);
+    if (!cycle) return false;
+    if (data.cycles.some((c) => c.startDate === newStartDate)) return false;
+    if (cycle.endDate && newStartDate > cycle.endDate) return false;
+
+    cycle.startDate = newStartDate;
+    data.cycles.sort((a, b) => a.startDate.localeCompare(b.startDate));
+    this._save(data);
+    return true;
+  },
+
+  /**
    * Record the end date for a logged cycle (unlocks learned period length).
    * @param {string} startDate
    * @param {string} endDate

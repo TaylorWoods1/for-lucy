@@ -38,6 +38,7 @@ export function renderOnboarding(onComplete) {
       <div class="date-input-wrap">
         <input type="date" id="start-date" class="date-input" value="${today}" max="${today}">
       </div>
+      <p class="field-hint">Not sure? You can change this anytime from the home screen.</p>
       <button class="btn btn-primary" id="btn-save-start" type="button">Save and continue</button>
     </div>
   `;
