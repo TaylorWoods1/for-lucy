@@ -1,7 +1,7 @@
 import { CONFIG } from '../config.js';
 import Storage from '../lib/storage.js';
 import { getUpcomingPeriods, getWeekAhead } from '../lib/cycle.js';
-import { todayISO, isValidDateISO } from '../lib/dates.js';
+import { todayISO, isValidDateISO, formatDisplayDate } from '../lib/dates.js';
 import { getPartnerName } from '../lib/profile.js';
 import { getTipsForPhase } from '../content/tips.js';
 import { getPhaseExplanation, phaseGuideHtml } from '../content/phases.js';
@@ -165,6 +165,19 @@ export function renderDashboard(state, cycles, settings, onUpdate) {
     </section>
 
     <section class="log-card">
+      <div class="log-card__recorded">
+        <p class="log-card__recorded-label">Last period started</p>
+        <p class="log-card__recorded-date">${escapeHtml(formatDisplayDate(state.lastStart))}</p>
+        <button type="button" class="log-card__fix" id="btn-fix-start" aria-expanded="false">Wrong date? Change it</button>
+        <div class="log-form log-form--fix" id="fix-start-form" hidden>
+          <label class="log-form__label" for="fix-start-date">Correct start date</label>
+          <div class="log-form__row">
+            <input type="date" id="fix-start-date" class="date-input" value="${escapeHtml(state.lastStart)}" max="${today}">
+            <button class="btn btn-primary" id="btn-save-fix-start" type="button">Save</button>
+          </div>
+        </div>
+      </div>
+
       <p class="log-card__prompt">${isActivePeriod ? 'Still on her period?' : 'Has her period started?'}</p>
       <div class="actions">
         <button class="btn btn-primary" id="${primaryAction.id}" type="button" data-log-mode="${primaryAction.mode}">${escapeHtml(primaryAction.label)}</button>
@@ -184,6 +197,41 @@ export function renderDashboard(state, cycles, settings, onUpdate) {
 
     <p class="meta">${escapeHtml(metaParts.join(' · '))}</p>
   `;
+
+  const fixToggle = $('#btn-fix-start');
+  const fixForm = $('#fix-start-form');
+  fixToggle?.addEventListener('click', () => {
+    const isHidden = fixForm?.hasAttribute('hidden');
+    if (isHidden) {
+      fixForm?.removeAttribute('hidden');
+      fixToggle.setAttribute('aria-expanded', 'true');
+      /** @type {HTMLInputElement | null} */ ($('#fix-start-date'))?.focus();
+    } else {
+      fixForm?.setAttribute('hidden', '');
+      fixToggle.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  $('#btn-save-fix-start')?.addEventListener('click', () => {
+    const input = /** @type {HTMLInputElement | null} */ ($('#fix-start-date'));
+    const date = input?.value;
+    const today = todayISO();
+    if (!date || !isValidDateISO(date) || date > today) {
+      showToast('Pick a valid date (not in the future)');
+      return;
+    }
+    if (date === state.lastStart) {
+      fixForm?.setAttribute('hidden', '');
+      fixToggle?.setAttribute('aria-expanded', 'false');
+      return;
+    }
+    if (!Storage.updateCycleStart(state.lastStart, date)) {
+      showToast('Could not save — check the date and try again');
+      return;
+    }
+    showToast('Start date updated');
+    onUpdate();
+  });
 
   $('#btn-log-today')?.addEventListener('click', (event) => {
     const mode = /** @type {HTMLButtonElement} */ (event.currentTarget).dataset.logMode;

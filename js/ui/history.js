@@ -1,5 +1,5 @@
 import Storage from '../lib/storage.js';
-import { formatDisplayDate, todayISO } from '../lib/dates.js';
+import { formatDisplayDate, todayISO, isValidDateISO } from '../lib/dates.js';
 import { escapeHtml } from './dom.js';
 import { showToast } from './toast.js';
 
@@ -16,14 +16,37 @@ export function historyPanelsHtml(cycles) {
         ? `${formatDisplayDate(cycle.startDate)} &ndash; ${formatDisplayDate(cycle.endDate)}`
         : formatDisplayDate(cycle.startDate);
       return `
-        <li class="history-item">
-          <span>${range}</span>
-          <button
-            type="button"
-            class="link-danger"
-            data-delete-cycle="${escapeHtml(cycle.startDate)}"
-            aria-label="Remove entry from ${escapeHtml(formatDisplayDate(cycle.startDate))}"
-          >Remove</button>
+        <li class="history-item" data-cycle-start="${escapeHtml(cycle.startDate)}">
+          <div class="history-item__main">
+            <span class="history-item__range">${range}</span>
+            <div class="history-item__actions">
+              <button
+                type="button"
+                class="link-action"
+                data-edit-cycle="${escapeHtml(cycle.startDate)}"
+                aria-label="Change start date for ${escapeHtml(formatDisplayDate(cycle.startDate))}"
+              >Change date</button>
+              <button
+                type="button"
+                class="link-danger"
+                data-delete-cycle="${escapeHtml(cycle.startDate)}"
+                aria-label="Remove entry from ${escapeHtml(formatDisplayDate(cycle.startDate))}"
+              >Remove</button>
+            </div>
+          </div>
+          <div class="history-item__edit" hidden>
+            <label class="log-form__label" for="edit-start-${escapeHtml(cycle.startDate)}">Start date</label>
+            <div class="log-form__row">
+              <input
+                type="date"
+                id="edit-start-${escapeHtml(cycle.startDate)}"
+                class="date-input"
+                value="${escapeHtml(cycle.startDate)}"
+                max="${todayISO()}"
+              >
+              <button type="button" class="btn btn-primary" data-save-edit="${escapeHtml(cycle.startDate)}">Save</button>
+            </div>
+          </div>
         </li>
       `;
     })
@@ -32,7 +55,7 @@ export function historyPanelsHtml(cycles) {
   return `
     <details class="panel">
       <summary>History (${cycles.length} logged)</summary>
-      <p class="panel-hint">Remove an entry if a date was logged by mistake — predictions recalculate instantly.</p>
+      <p class="panel-hint">Change a start date if you logged the wrong day, or remove an entry entirely. Predictions recalculate instantly.</p>
       <ul class="history-list">${items}</ul>
     </details>
 
@@ -57,6 +80,51 @@ export function historyPanelsHtml(cycles) {
  * @param {() => void} onUpdate re-render callback
  */
 export function bindHistoryPanels(root, onUpdate) {
+  root.querySelectorAll('[data-edit-cycle]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const startDate = button.getAttribute('data-edit-cycle');
+      if (!startDate) return;
+      const item = button.closest('.history-item');
+      const editPanel = item?.querySelector('.history-item__edit');
+      if (!editPanel) return;
+      const isHidden = editPanel.hasAttribute('hidden');
+      root.querySelectorAll('.history-item__edit').forEach((panel) => {
+        panel.setAttribute('hidden', '');
+      });
+      if (isHidden) {
+        editPanel.removeAttribute('hidden');
+        editPanel.querySelector('input')?.focus();
+      }
+    });
+  });
+
+  root.querySelectorAll('[data-save-edit]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const oldStart = button.getAttribute('data-save-edit');
+      if (!oldStart) return;
+      const item = button.closest('.history-item');
+      const input = /** @type {HTMLInputElement | null} */ (
+        item?.querySelector(`#edit-start-${CSS.escape(oldStart)}`)
+      );
+      const date = input?.value;
+      const today = todayISO();
+      if (!date || !isValidDateISO(date) || date > today) {
+        showToast('Pick a valid date (not in the future)');
+        return;
+      }
+      if (date === oldStart) {
+        item?.querySelector('.history-item__edit')?.setAttribute('hidden', '');
+        return;
+      }
+      if (!Storage.updateCycleStart(oldStart, date)) {
+        showToast('Could not save — check the date and try again');
+        return;
+      }
+      showToast('Start date updated');
+      onUpdate();
+    });
+  });
+
   root.querySelectorAll('[data-delete-cycle]').forEach((button) => {
     button.addEventListener('click', () => {
       const startDate = button.getAttribute('data-delete-cycle');
